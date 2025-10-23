@@ -32,8 +32,16 @@ readme = "README.md"
 requires-python = ">=3.10"
 license = {file = "LICENSE"}
 
+
 [project.urls]
 Repository = "https://github.com/xiaomi-research/xares-llm.git"
 
+[tool.setuptools.package-data]
+xares_llm = [
+  "src/xares_llm/tasks/all/eval/*yaml",
+  "src/xares_llm/tasks/all/train/*yaml",
+  "src/xares_llm/tasks/single/eval/*.yaml",
+  "src/xares_llm/tasks/single/train/*.yaml",
+]
 [tool.setuptools.packages.find]
 where = ["src"]

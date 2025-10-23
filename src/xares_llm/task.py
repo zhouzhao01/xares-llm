@@ -4,37 +4,35 @@ import torch
 from pathlib import Path
 from transformers import AutoTokenizer, TrainingArguments
 import yaml
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, asdict
 from loguru import logger
 from typing import Any, Callable, Dict, List
 
+from xares_llm.utils import seed_everything
 from xares_llm.audiowebdataset import AudioTextDataType, AudioTextTokenWebdataset
-from xares_llm.utils import seed_everything, setup_global_logger
 from xares_llm.trainer import XaresLLMEvaluator, XaresLLMTrainer
 from xares_llm.modeling_audiollm import XaresLLMModel, XaresLLMModelConfig
 from xares_llm.metrics import get_metric, RegisteredMetricsLiteral
+import importlib
+import pprint
+
+AVAILABLE_SINGLE_TRAINING_CONFIGS = {"all": _ for _ in importlib.resources.files('xares_llm.tasks.all.train').iterdir()} | { str(Path(_).stem).replace('_config',''): _ for _ in importlib.resources.files('xares_llm.tasks.single.train').iterdir()}
+AVAILABLE_EVALUATION_CONFIGS =  {"all" : _ for _ in importlib.resources.files('xares_llm.tasks.all.eval').iterdir()} | {str(Path(_).stem).replace('_test_config',''): _ for _ in importlib.resources.files('xares_llm.tasks.single.eval').iterdir()} 
 
 
 @dataclass
 class XaresLLMTrainConfig:
     output_dir: str = "experiments/"
-    env_root: Path | str = Path("env/")
-    config_name: str | None = None  # Will be set if loaded from a .yaml
+    config_name: str  = "default"  # Will be set if loaded from a .yaml
 
     # General
-    private: bool = False
-    torch_num_threads: int = 2  # Do not use too many otherwise slows down
+    torch_num_threads: int = 1  # Do not use too many otherwise slows down
     seed: int = 42  # manual seed for all experiments
     eval_weight: int = 0
 
     train_data: List[AudioTextDataType] | None = None
-    # valid_data: List[AudioTextDataType] | None = None
 
-    # Audio tar
-    force_download: bool = False
-    zenodo_id: str | None = None
-
-    # MLP
+    # MLP And decoder
     decoder_model_name: str = "gpt2"
     ckpt_dir_name = "checkpoints"
     embedding_dir_name = "embeddings"
@@ -42,6 +40,7 @@ class XaresLLMTrainConfig:
 
     # Dataloader/dataset arguments
     seed: int = field(default=42)
+    crop_audio_length: float = 30  # Cropping all audio to at most 30s
     save_total_limit: int | None = field(default=4)
     save_steps: float = field(default=1000)  # TrainingArguments is float ....
     warmup_steps: int = field(default=1000)
@@ -59,36 +58,42 @@ class XaresLLMTrainConfig:
     weight_decay: float = field(default=0.01)
     seed: int = field(default=42)
     torch_compile: bool = field(default=False)
-    bf16: bool = False
-    fp16: bool = False
+    bf16: bool  = False # WIll be set automatically
+    fp16: bool = False # Will be set automatically
     max_grad_norm: float = field(default=1.0)
     logging_dir: str = "log"
     gradient_accumulation_steps: int = field(default=1)
 
     batch_size_train: int = 16
-    batch_size_valid: int | None = None
     learning_rate: float = 1e-4
     iterations: int = 100_000
-    valid_every: int = 1000
     num_training_workers: int = 0
-    num_validation_workers: int = 0
-    sort_by_length: bool = True
+    sort_by_length: int = 256 # Sort 256 samples by length, speedup training
     # metric: METRICS_TYPE = "accuracy"
     metric_args: Dict[str, Any] = field(default_factory=lambda: dict())
 
     def __post_init__(self):
+        # torch.cuda.is_bf16_supported() does return True on V100, support is there ... but no speedup
+        if torch.cuda.is_available():
+            has_bf16support = torch.cuda.get_device_capability(torch.device("cuda"))[0] > 7
+            if has_bf16support:
+                self.bf16 = True
+                self.fp16 = False
+            else:
+                self.fp16 = True
+                self.bf16 = False
+
         if isinstance(self.train_data, dict):
             self.train_data = [
                 AudioTextDataType(name=k, **val) for k, val in self.train_data.items()
             ]
-
-        setup_global_logger()
-        if self.batch_size_valid is None:
-            self.batch_size_valid = self.batch_size_train
-        if self.env_root is None:
-            self.env_root = Path("env")
         torch.set_num_threads(self.torch_num_threads)
         seed_everything(self.seed)
+
+
+    def __repr__(self):
+        return pprint.pformat(asdict(self))
+
 
     @classmethod
     def from_file(cls, config_file: str) -> XaresLLMTrainConfig:
@@ -96,6 +101,15 @@ class XaresLLMTrainConfig:
             yaml_config = yaml.load(con_read, Loader=yaml.FullLoader)
         yaml_config["config_name"] = Path(config_file).stem
         return cls(**yaml_config)
+
+    @classmethod
+    def from_file_or_key(cls, config_identifier: str) -> XaresLLMTrainConfig:
+        if config_identifier in AVAILABLE_SINGLE_TRAINING_CONFIGS:
+            return cls.from_file(AVAILABLE_SINGLE_TRAINING_CONFIGS[config_identifier])
+        path_obj = Path(config_identifier)
+        if path_obj.is_file():
+            return cls.from_file(config_identifier)
+        raise ValueError(f"Unknown config identifier {config_identifier}")
 
 
 @dataclass
@@ -126,11 +140,26 @@ class XaresLLMEvaluationConfig:
             )
         return evaluation_configs
 
+    def __repr__(self):
+        return pprint.pformat(asdict(self))
+
+    @classmethod
+    def configs_from_file_or_key(cls, config_identifier: str) -> List[XaresLLMEvaluationConfig]:
+        if config_identifier in AVAILABLE_EVALUATION_CONFIGS:
+            return cls.configs_from_file(AVAILABLE_EVALUATION_CONFIGS[config_identifier])
+        path_obj = Path(config_identifier)
+        if path_obj.is_file():
+            return cls.configs_from_file(config_identifier)
+        raise ValueError(f"Unknown config identifier {config_identifier}")
+
 
 class XaresLLMTask:
     def __init__(self, audio_encoder: Callable, train_config: XaresLLMTrainConfig):
         self.audio_encoder = audio_encoder
         self.train_config = train_config
+        self.output_dir = Path(train_config.output_dir) / train_config.config_name /  audio_encoder.__class__.__name__
+        logger.info(f"Experiment output path set to {self.output_dir}")
+        logger.info(f"Loading {train_config.decoder_model_name} tokenizer")
         self.tokenizer = AutoTokenizer.from_pretrained(train_config.decoder_model_name)
 
     def run_mlp(self, eval_configs: List[XaresLLMEvaluationConfig]) -> List[Dict[str, Any]]:
@@ -159,12 +188,13 @@ class XaresLLMTask:
             training=True,
             batch_size=self.train_config.batch_size_train,
             resample=True,
-            sort_by_length=256,
+            sort_by_length=self.train_config.sort_by_length,
             num_workers=self.train_config.num_training_workers,
+            crop_audio_length=self.train_config.crop_audio_length,
         )
 
         training_args = TrainingArguments(
-            output_dir=str(self.train_config.output_dir),
+            output_dir=str(self.output_dir),
             learning_rate=self.train_config.learining_rate,  # Using the typo'd attribute value
             per_device_train_batch_size=self.train_config.per_device_train_batch_size,
             # Remaining arguments
@@ -178,7 +208,8 @@ class XaresLLMTask:
             save_safetensors=False,
             torch_compile=self.train_config.torch_compile,
             bf16=self.train_config.bf16,
-            logging_dir=Path(self.train_config.output_dir) / self.train_config.logging_dir,
+            fp16=self.train_config.fp16,
+            logging_dir=Path(self.output_dir) / self.train_config.logging_dir,
             gradient_accumulation_steps=self.train_config.gradient_accumulation_steps,
         )
 
@@ -217,6 +248,5 @@ class XaresLLMTask:
         return evaluator.evaluate()
 
     def run(self, eval_configs: List[XaresLLMEvaluationConfig]):
-        # self.download_audio_tar()
         scores = self.run_mlp(eval_configs=eval_configs)
         return scores

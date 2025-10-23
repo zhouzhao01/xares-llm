@@ -21,6 +21,7 @@ DATASET_PROMPTS = {
     "GTZAN": Data(
         prompt="Classify the music genre (GTZAN).",
         metric="Accuracy",
+        key="genre",
     ),
     "FreeMusicArchive": Data(
         prompt="Classify the music genre (FMA).",
@@ -236,8 +237,7 @@ def generate_configs(root_dir="env", output_dir="configs", workers=4):
                 yaml.dump(train_config, f, sort_keys=False, default_flow_style=False)
             print(f"  -> Generated Training Config: {output_filepath}")
 
-
-            output_filepath_all = Path(output_dir) / f"all_train_config.yaml"
+            output_filepath_all = Path(output_dir) / "all_train_config.yaml"
             with open(output_filepath_all, 'w') as f:
                 yaml.dump(all_train_configs, f, sort_keys=False, default_flow_style=False)
             print(f"  -> Generated Training Config: {output_filepath}")
@@ -256,9 +256,11 @@ def generate_configs(root_dir="env", output_dir="configs", workers=4):
             data_list = organized_data['test'][dataset_name]
 
             eval_config[eval_key] = {
-                "prompt": prompt,
-                "key": key,
-                "data": data_list,
+                "data": { 
+                         'data': data_list,
+                         'key': key,
+                         'prompt': prompt,
+                         },
                 "batch_size": 4,
                 "num_workers": 0,
                 "metric": metric,
