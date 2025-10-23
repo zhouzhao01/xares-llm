@@ -1,0 +1,16 @@
+train_data:
+  MECAT:
+    prompt: Write a general audiocaption.
+    data:
+    - env/MECAT-Caption/0M0/train_0000-0000000.tar.gz
+    - env/MECAT-Caption/000/train_0000-0000000.tar.gz
+    - env/MECAT-Caption/SMA/train_0000-0000000.tar.gz
+    - env/MECAT-Caption/S00/train_0000-0000000.tar.gz
+    - env/MECAT-Caption/S00/train_0001-0000000.tar.gz
+    - env/MECAT-Caption/0MA/train_0000-0000000.tar.gz
+    - env/MECAT-Caption/S0A/train_0000-0000000.tar.gz
+    - env/MECAT-Caption/SM0/train_0000-0000000.tar.gz
+    - env/MECAT-Caption/SM0/train_0001-0000000.tar.gz
+    - env/MECAT-Caption/00A/train_0000-0000000.tar.gz
+    key: short
+num_training_workers: 4

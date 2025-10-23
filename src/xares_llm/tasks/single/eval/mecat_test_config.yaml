@@ -1,0 +1,18 @@
+eval_mecat:
+  data:
+    data:
+      -  env/MECAT-Caption/0M0/test_0000-0000000.tar.gz
+      -  env/MECAT-Caption/000/test_0000-0000000.tar.gz
+      -  env/MECAT-Caption/SMA/test_0000-0000000.tar.gz
+      -  env/MECAT-Caption/S00/test_0000-0000000.tar.gz
+      -  env/MECAT-Caption/S00/test_0001-0000000.tar.gz
+      -  env/MECAT-Caption/0MA/test_0000-0000000.tar.gz
+      -  env/MECAT-Caption/S0A/test_0000-0000000.tar.gz
+      -  env/MECAT-Caption/SM0/test_0000-0000000.tar.gz
+      -  env/MECAT-Caption/SM0/test_0001-0000000.tar.gz
+      -  env/MECAT-Caption/00A/test_0000-0000000.tar.gz
+    key: short
+    prompt: Write a general audiocaption.
+  batch_size: 4
+  num_workers: 0
+  metric: FENSE
