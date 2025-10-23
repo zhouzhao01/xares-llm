@@ -1,0 +1,9 @@
+eval_esc-50:
+  data:
+    data:
+    - env/ESC-50/test/esc50_fold_5_0000000.tar.gz
+    key: text;caption;captions;label;labels
+    prompt: Classify the environmental sound.
+  batch_size: 4
+  num_workers: 0
+  metric: Accuracy

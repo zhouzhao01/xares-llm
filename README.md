@@ -12,9 +12,50 @@ uv pip install $THIS_REPO
 ## Usage
 
 ```bash
-python3 -m xares_llm.run example/dummy/dummyencoder.py src/xares_llm/tasks/single/fsdkaggle2018.yaml src/xares_llm/tasks/evaluation/eval_fsdkaggle2018.yaml 
+python3 -m xares_llm.run example/dummy/dummyencoder.py 
 ```
 
+### Single dataset training
+
+
+Here we train on clotho and test on clotho.
+
+```bash
+python3 -m xares_llm.run example/dummy/dummyencoder.py clotho clotho
+```
+
+
+All available current datasets can be seen by running `python3 -m xares_llm.run -h`.
+
+
+Datasets can also be passed with a custom .yaml:
+
+For training, the format is:
+
+```yaml
+train_data:
+  CustomDataName:
+    prompt: My prompt
+    data:
+    - PATH_TO_MY_TARS{00..10}.tar
+    key: DATAKEY
+num_training_workers: 4
+```
+
+
+For evaluation:
+
+```yaml
+eval_custom:
+  data:
+    data:
+    - PATH_TO_MY_TARS{00..10}.tar
+    key: DATAKEY # Inside the json
+    prompt: My prompt
+  batch_size: 4
+  num_workers: 0
+  metric: Accuracy
+```
 
 
 ### Modify dataset

@@ -1,0 +1,7 @@
+train_data:
+  LibriSpeech:
+    prompt: Transcribe the English speech into text
+    data:
+    - env/LibriSpeech/train/train-clean-100-0000{00..19}.tar.gz
+    key: text;caption;captions;label;labels
+num_training_workers: 4

@@ -1,0 +1,9 @@
+eval_voxceleb1:
+  data:
+    data:
+    - env/VoxCeleb1/test/test_0000{00..18}.tar.gz
+    key: text;caption;captions;label;labels
+    prompt: Are the two speakers the same or different?
+  batch_size: 4
+  num_workers: 0
+  metric: Accuracy

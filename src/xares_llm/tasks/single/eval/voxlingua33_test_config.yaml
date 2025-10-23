@@ -1,0 +1,9 @@
+eval_voxlingua33:
+  data:
+    data:
+    - env/VoxLingua33/test/dev_00000{00..05}.tar.gz
+    key: text;caption;captions;label;labels
+    prompt: Classify the language.
+  batch_size: 4
+  num_workers: 0
+  metric: Accuracy

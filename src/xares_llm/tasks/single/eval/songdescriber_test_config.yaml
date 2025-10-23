@@ -1,0 +1,9 @@
+eval_songdescriber:
+  data:
+    data:
+    - env/Songdescriber/test/valid_song_describer_00000{00..01}.tar.gz
+    key: text;caption;captions;label;labels
+    prompt: Generate a caption for the music
+  batch_size: 4
+  num_workers: 0
+  metric: FENSE

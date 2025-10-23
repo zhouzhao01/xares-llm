@@ -1,0 +1,9 @@
+eval_nsynth:
+  data:
+    data:
+    - env/NSynth/test/test_0000000.tar.gz
+    key: text;caption;captions;label;labels
+    prompt: Classify the music instrument.
+  batch_size: 4
+  num_workers: 0
+  metric: Accuracy

@@ -1,0 +1,9 @@
+eval_freemusicarchive:
+  data:
+    data:
+    - env/FreeMusicArchive/test/fma_small_test_00000{00..07}.tar.gz
+    key: text;caption;captions;label;labels
+    prompt: Classify the music genre (FMA).
+  batch_size: 4
+  num_workers: 0
+  metric: Accuracy

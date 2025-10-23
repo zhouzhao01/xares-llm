@@ -1,0 +1,9 @@
+eval_aishell-1:
+  data:
+    data:
+    - env/AISHELL-1/test/test_0000000.tar.gz
+    key: text;caption;captions;label;labels
+    prompt: Transcribe the Chinese speech into text.
+  batch_size: 4
+  num_workers: 0
+  metric: iCER

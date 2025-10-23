@@ -1,0 +1,7 @@
+train_data:
+  FSD50k:
+    prompt: Multi-label classification for FSD50k
+    data:
+    - env/FSD50k/train/train_with_text_0000{00..08}0.tar.gz
+    key: text;caption;captions;label;labels
+num_training_workers: 4

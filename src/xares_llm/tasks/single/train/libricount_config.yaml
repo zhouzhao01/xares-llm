@@ -1,0 +1,7 @@
+train_data:
+  LibriCount:
+    prompt: Count the amount of speakers.
+    data:
+    - env/LibriCount/train/libricount_fold0{00..03}.tar.gz
+    key: text;caption;captions;label;labels
+num_training_workers: 4

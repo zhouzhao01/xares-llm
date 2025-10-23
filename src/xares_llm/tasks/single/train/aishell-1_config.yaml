@@ -1,0 +1,7 @@
+train_data:
+  AISHELL-1:
+    prompt: Transcribe the Chinese speech into text.
+    data:
+    - env/AISHELL-1/train/train_00000{00..12}.tar.gz
+    key: text;caption;captions;label;labels
+num_training_workers: 4

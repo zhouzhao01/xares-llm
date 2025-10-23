@@ -1,0 +1,9 @@
+eval_vocalsound:
+  data:
+    data:
+    - env/VocalSound/test/test_00000{00..04}.tar.gz
+    key: text;caption;captions;label;labels
+    prompt: Classify the vocal sound.
+  batch_size: 4
+  num_workers: 0
+  metric: Accuracy
