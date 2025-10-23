@@ -1,7 +1,0 @@
-train_data: 
-  librispeech:
-    prompt: "Transcribe the speech into text"
-    data:
-      - env/librispeech/*tar
-num_training_workers: 4
-

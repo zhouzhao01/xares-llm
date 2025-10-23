@@ -28,7 +28,7 @@ class XaresLLMTrainConfig:
     eval_weight: int = 0
 
     train_data: List[AudioTextDataType] | None = None
-    valid_data: List[AudioTextDataType] | None = None
+    # valid_data: List[AudioTextDataType] | None = None
 
     # Audio tar
     force_download: bool = False
@@ -80,10 +80,6 @@ class XaresLLMTrainConfig:
         if isinstance(self.train_data, dict):
             self.train_data = [
                 AudioTextDataType(name=k, **val) for k, val in self.train_data.items()
-            ]
-        if isinstance(self.valid_data, dict):
-            self.valid_data = [
-                AudioTextDataType(name=k, **val) for k, val in self.valid_data.items()
             ]
 
         setup_global_logger()
