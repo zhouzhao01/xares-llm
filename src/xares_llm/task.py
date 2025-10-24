@@ -16,6 +16,7 @@ from xares_llm.metrics import get_metric, RegisteredMetricsLiteral
 import importlib
 import pprint
 
+# Mappings from config.yaml -> Path to the config. By default we store most configs in the package tree, but users can also provide their own
 AVAILABLE_TRAINING_CONFIGS = {
     "all": _ for _ in importlib.resources.files("xares_llm.tasks.all.train").iterdir()
 } | {
@@ -182,10 +183,9 @@ class XaresLLMTask:
             config=XaresLLMModelConfig(decoder_type=self.train_config.decoder_model_name),
             audio_encoder=self.audio_encoder,
         )
-        tokenizer = AutoTokenizer.from_pretrained(model.config.decoder_type)
         data_object = AudioTextTokenWebdataset(
             data_urls=self.train_config.train_data,
-            tokenizer=tokenizer,
+            tokenizer=self.tokenizer,
             training=True,
             batch_size=self.train_config.batch_size_train,
             resample=True,
@@ -232,12 +232,11 @@ class XaresLLMTask:
         else:
             raise ValueError("You need to provide either trained_model or chpt_path.")
 
-        tokenizer = AutoTokenizer.from_pretrained(model.config.decoder_type)
-        metrics_compute_function = get_metric(eval_config.metric, tokenizer=tokenizer)
+        metrics_compute_function = get_metric(eval_config.metric, tokenizer=self.tokenizer)
 
         data_object_eval = AudioTextTokenWebdataset(
             data_urls=eval_config.test_data,
-            tokenizer=tokenizer,
+            tokenizer=self.tokenizer,
             training=False,
             batch_size=eval_config.batch_size,
             sort_by_length=256, # just to speed up a bit
