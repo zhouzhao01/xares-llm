@@ -3,5 +3,5 @@ train_data:
     prompt: Classify the language.
     data:
     - env/VoxLingua33/train/train_subset_k_000{00..209}.tar.gz
-    key: text;caption;captions;label;labels
+    key: label;labels
 num_training_workers: 4

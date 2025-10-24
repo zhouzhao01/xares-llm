@@ -19,14 +19,14 @@ from pathlib import Path
 from transformers import AutoTokenizer, PreTrainedTokenizer
 
 
-def set_cache():
+def set_cache() -> str:
     xdg_cache_home = os.getenv("XARES_DATA_HOME")
     if xdg_cache_home:
         cache_dir = Path(xdg_cache_home)
     else:
         cache_dir = Path.cwd() / "xares_data"
     cache_dir.mkdir(parents=True, exist_ok=True)
-    return cache_dir
+    return str(cache_dir)
 
 
 CACHE_DIR = set_cache()
@@ -354,11 +354,7 @@ def create_audio_text_token_pipeline(
     handler: Callable = wds.reraise_exception,
     **filtering_kwargs,
 ) -> wds.DataPipeline:
-    _cache_dir = cache_dir if cache_dir is not None else CACHE_DIR
     pipeline: List = []
-    logger.info(
-        f"Pipeline start: Training={training}, Resampling={resample}, Batch={batch_size}, Cacheing at {_cache_dir}"
-    )
     if resample:
         pipeline.append(wds.ResampledShards(urls))
     else:
@@ -371,7 +367,7 @@ def create_audio_text_token_pipeline(
                 wds.detshuffle(),
                 wds.split_by_node,
                 wds.split_by_worker,
-                wds.cache.FileCache(cache_dir=_cache_dir, url_to_name=url_to_name),
+                wds.cache.FileCache(cache_dir=cache_dir, url_to_name=url_to_name),
                 pipelinefilter(tar_file_expander)(handler=handler),
                 pipelinefilter(group_by_keys)(handler=handler),
             ]
@@ -381,7 +377,7 @@ def create_audio_text_token_pipeline(
         pipeline.extend(
             [
                 wds.split_by_worker,
-                wds.cache.FileCache(cache_dir=_cache_dir, url_to_name=url_to_name),
+                wds.cache.FileCache(cache_dir=cache_dir, url_to_name=url_to_name),
                 pipelinefilter(tar_file_expander)(handler=handler),
                 pipelinefilter(group_by_keys)(handler=handler),
                 wds.split_by_node,
@@ -437,14 +433,19 @@ class AudioTextTokenWebdataset:
     sort_by_length: int | None = None
     shuffle: int = 256  # For Webloader during training
     dataset: wds.DataPipeline | None = None  # Saving the generated dataset
+    cache_dir: str = "" # use default cache dir
 
     def __post_init__(self):
         if hasattr(self.tokenizer, "pad_token") and self.tokenizer.pad_token is None:
             self.tokenizer.pad_token = self.tokenizer.eos_token
+        self.cache_dir = self.cache_dir if self.cache_dir is not "" else CACHE_DIR
 
     def create_dataset(self) -> wds.DataPipeline:
         data_urls = parse_input_to_datatype(self.data_urls)
         datasets = []
+        logger.info(
+            f"Pipeline start: Training={self.training}, Resampling={self.resample}, Batch={self.batch_size}, Cacheing at {self.cache_dir}"
+        )
         for data_type in data_urls:
             ds = create_audio_text_token_pipeline(
                 urls=expand_path(data_type.data),
@@ -461,6 +462,7 @@ class AudioTextTokenWebdataset:
                 crop_audio_length=self.crop_audio_length,
                 max_text_token_length=self.max_text_token_length,
                 resample=self.resample,
+                cache_dir=self.cache_dir,
             )
             datasets.append((data_type, ds))
 
