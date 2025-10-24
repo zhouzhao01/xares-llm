@@ -1,7 +1,17 @@
 from loguru import logger
 import torch
+from importlib import import_module
 import random
 import numpy as np
+
+
+def attr_from_module(qualified_name: str):
+    if "." not in qualified_name:
+        raise ValueError("Invalid module name/path name.")
+    module_name, attribute_name = qualified_name.rsplit(".", 1)
+    module_to_import = import_module(module_name)
+    cls_attribute = getattr(module_to_import, attribute_name)
+    return cls_attribute
 
 
 def attr_from_py_path(path: str, endswith: str | None = None) -> type:
@@ -23,6 +33,7 @@ def attr_from_py_path(path: str, endswith: str | None = None) -> type:
         raise ValueError(f"Expected 1 class with endswith={endswith}, got {len(attr_list)}")
 
     return getattr(module, attr_list[0])
+
 
 def seed_everything(seed: int = 42, deterministic: bool = True) -> int:
     logger.debug(f"Setting global seed to {seed}...")

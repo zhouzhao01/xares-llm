@@ -28,9 +28,7 @@ class MetricRegistry:
     def create(cls, name, *args, **kwargs):
         """Create an instance of a registered class"""
         if name not in cls._registry:
-            raise ValueError(
-                f"Unknown class: '{name}', possible values {list(cls._registry.keys())}"
-            )
+            raise ValueError(f"Unknown class: '{name}', possible values {list(cls._registry.keys())}")
         return cls._registry[name](*args, **kwargs)
 
     @classmethod
@@ -65,9 +63,7 @@ class WER:
 
     def __call__(self, pred: EvalPrediction):
         preds, targets = self.tokendecoder.decode_predictions(pred)
-        return {
-            "WER": wer(list(map(preprocess_string, targets)), list(map(preprocess_string, preds)))
-        }
+        return {"WER": wer(list(map(preprocess_string, targets)), list(map(preprocess_string, preds)))}
 
 
 @MetricRegistry.register
@@ -78,9 +74,7 @@ class CER:
 
     def __call__(self, pred: EvalPrediction):
         preds, targets = self.tokendecoder.decode_predictions(pred)
-        return {
-            "CER": cer(list(map(preprocess_string, targets)), list(map(preprocess_string, preds)))
-        }
+        return {"CER": cer(list(map(preprocess_string, targets)), list(map(preprocess_string, preds)))}
 
 
 @MetricRegistry.register
@@ -91,9 +85,7 @@ class Accuracy:
 
     def __call__(self, pred: EvalPrediction):
         preds, targets = self.tokendecoder.decode_predictions(pred)
-        return {
-            "CER": cer(list(map(preprocess_string, targets)), list(map(preprocess_string, preds)))
-        }
+        return {"CER": cer(list(map(preprocess_string, targets)), list(map(preprocess_string, preds)))}
 
 
 RegisteredMetricsLiteral = MetricRegistry.get_registered_names()

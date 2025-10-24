@@ -7,12 +7,13 @@ from dataclasses import dataclass
 class Data:
     prompt: str
     metric: str
-    key: str = 'text;caption;captions;label;labels'
+    key: str = "text;caption;captions;label;labels"
+
 
 DATASET_PROMPTS = {
     "VocalSound": Data(
         prompt="Classify the vocal sound.",
-        metric="Accuracy",  
+        metric="Accuracy",
     ),
     "UrbanSound8k": Data(
         prompt="Classify the urban sound.",
@@ -89,21 +90,21 @@ DATASET_PROMPTS = {
     ),
 }
 
-DATASET_PROMPTS = {k.lower():v for k,v in DATASET_PROMPTS.items()}
+DATASET_PROMPTS = {k.lower(): v for k, v in DATASET_PROMPTS.items()}
 
 
 def generate_path_pattern(file_paths):
     """
-    Analyzes a list of full file paths and attempts to generate a single 
-    POSIX-style numerical range pattern (like {START...END}). If the naming 
-    convention does not support a numerical range, it returns the original 
+    Analyzes a list of full file paths and attempts to generate a single
+    POSIX-style numerical range pattern (like {START...END}). If the naming
+    convention does not support a numerical range, it returns the original
     list of individual paths.
-    
+
     Args:
         file_paths (list): List of full file paths (strings).
-        
+
     Returns:
-        list: A list containing a single pattern string, or the original 
+        list: A list containing a single pattern string, or the original
               list of paths if pattern generation fails.
     """
     if not file_paths:
@@ -114,7 +115,7 @@ def generate_path_pattern(file_paths):
     base_dir = str(Path(file_paths[0]).parent)
 
     if len(filenames) == 1:
-        return file_paths # Returns the full path of the single file
+        return file_paths  # Returns the full path of the single file
 
     first_name = filenames[0]
     last_name = filenames[-1]
@@ -134,24 +135,23 @@ def generate_path_pattern(file_paths):
             suffix_len += 1
         else:
             break
-    suffix = first_name[len(first_name) - suffix_len:]
+    suffix = first_name[len(first_name) - suffix_len :]
 
     # 3. Determine the numerical range (min to max index)
-    variable_parts = [name[prefix_len:len(name)-suffix_len] for name in filenames]
+    variable_parts = [name[prefix_len : len(name) - suffix_len] for name in filenames]
 
     parsed_numbers = []
-    
+
     for part in variable_parts:
         if not part.isdigit():
             # Fallback: if any part is NOT numeric, we cannot form a safe numeric range.
-            return file_paths 
+            return file_paths
         try:
             parsed_numbers.append(int(part))
         except ValueError:
-             # Safety fallback
-             return file_paths 
+            # Safety fallback
+            return file_paths
 
-    
     # 4. Generate the {START...END} pattern
     if parsed_numbers:
         start_num = min(parsed_numbers)
@@ -159,22 +159,22 @@ def generate_path_pattern(file_paths):
         sequence_tag = f"{{{start_num:02d}..{end_num:02d}}}"
         pattern_filename = prefix + sequence_tag + suffix
         return [str(Path(base_dir) / pattern_filename)]
-    return file_paths # Final fallback
+    return file_paths  # Final fallback
 
 
 def generate_configs(root_dir="env", output_dir="configs", workers=4):
     """
-    Finds .tar.gz files in the directory structure, generates POSIX path 
-    patterns, and writes the resulting YAML configurations, separating 
+    Finds .tar.gz files in the directory structure, generates POSIX path
+    patterns, and writes the resulting YAML configurations, separating
     training (train/valid) and evaluation (test) data.
     """
     # Create the main configs directory
     Path(output_dir).mkdir(exist_ok=True)
-    
+
     # Create the test configs subdirectory
     test_output_dir = Path(output_dir) / "test"
     test_output_dir.mkdir(exist_ok=True)
-    
+
     organized_data = {}
     all_datasets = set()
 
@@ -183,32 +183,36 @@ def generate_configs(root_dir="env", output_dir="configs", workers=4):
     for dataset_path in Path(root_dir).iterdir():
         if dataset_path.is_dir():
             dataset_name = dataset_path.name
-            
+
             for split_name_path in dataset_path.iterdir():
                 split_name = split_name_path.name
-                
-                if split_name in ['train', 'test', 'valid'] and split_name_path.is_dir():
+
+                if split_name in ["train", "test", "valid"] and split_name_path.is_dir():
                     file_paths = [str(p) for p in split_name_path.glob("*.tar.gz")]
-                    
+
                     if file_paths:
                         pattern_list = generate_path_pattern(file_paths)
-                        
+
                         if split_name not in organized_data:
                             organized_data[split_name] = {}
-                        
+
                         organized_data[split_name][dataset_name] = pattern_list
                         all_datasets.add(dataset_name)
-                        
+
                         # Summary print for user feedback
                         summary = pattern_list[0] if len(pattern_list) == 1 else f"{len(pattern_list)} individual files"
-                        print(f"  Found {len(file_paths)} files for {dataset_name}/{split_name}, condensed to pattern: {summary}")
+                        print(
+                            f"  Found {len(file_paths)} files for {dataset_name}/{split_name}, condensed to pattern: {summary}"
+                        )
 
     if not all_datasets:
         print("No datasets found to process. Exiting.")
         return
 
     # Step 2: Generate and save the YAML configs
-    print(f"\nGenerating configurations for {len(all_datasets)} unique datasets, separating train/valid and test splits...")
+    print(
+        f"\nGenerating configurations for {len(all_datasets)} unique datasets, separating train/valid and test splits..."
+    )
 
     all_train_configs = {"train_data": []}
 
@@ -216,7 +220,7 @@ def generate_configs(root_dir="env", output_dir="configs", workers=4):
         # --- A. Generate Training Config (train + valid) ---
         train_config = {}
         has_train_data = False
-        for split_name in ['train']:
+        for split_name in ["train"]:
             if split_name in organized_data and dataset_name in organized_data[split_name]:
                 has_train_data = True
                 config_key = f"{split_name}_data"
@@ -229,52 +233,51 @@ def generate_configs(root_dir="env", output_dir="configs", workers=4):
                     }
                 }
 
-                all_train_configs['train_data'].append(train_config[config_key])
+                all_train_configs["train_data"].append(train_config[config_key])
         if has_train_data:
             train_config["num_training_workers"] = workers
             output_filepath = Path(output_dir) / f"{dataset_name.lower()}_config.yaml"
-            with open(output_filepath, 'w') as f:
+            with open(output_filepath, "w") as f:
                 yaml.dump(train_config, f, sort_keys=False, default_flow_style=False)
             print(f"  -> Generated Training Config: {output_filepath}")
 
             output_filepath_all = Path(output_dir) / "all_train_config.yaml"
-            with open(output_filepath_all, 'w') as f:
+            with open(output_filepath_all, "w") as f:
                 yaml.dump(all_train_configs, f, sort_keys=False, default_flow_style=False)
             print(f"  -> Generated Training Config: {output_filepath}")
 
-
         # --- B. Generate Evaluation Config (test) ---
-        if 'test' in organized_data and dataset_name in organized_data['test']:
+        if "test" in organized_data and dataset_name in organized_data["test"]:
             eval_config = {}
             # Use the requested key format: eval_datasetname (lowercased)
             eval_key = f"eval_{dataset_name.lower()}"
             # Get prompt and data from the 'test' split
             d = DATASET_PROMPTS[dataset_name.lower()]
             prompt = d.prompt
-            metric =d.metric
+            metric = d.metric
             key = d.key
-            data_list = organized_data['test'][dataset_name]
+            data_list = organized_data["test"][dataset_name]
 
             eval_config[eval_key] = {
-                "data": { 
-                         'data': data_list,
-                         'key': key,
-                         'prompt': prompt,
-                         },
+                "data": {
+                    "data": data_list,
+                    "key": key,
+                    "prompt": prompt,
+                },
                 "batch_size": 4,
                 "num_workers": 0,
                 "metric": metric,
             }
-            
+
             test_output_filepath = test_output_dir / f"{dataset_name.lower()}_test_config.yaml"
 
-            with open(test_output_filepath, 'w') as f:
+            with open(test_output_filepath, "w") as f:
                 yaml.dump(eval_config, f, sort_keys=False, default_flow_style=False)
-                
+
             print(f"  -> Generated Evaluation Config: {test_output_filepath}")
 
+
 if __name__ == "__main__":
-    
     ROOT_DATA_DIR = "env"
     OUTPUT_CONFIG_DIR = "configs"
 

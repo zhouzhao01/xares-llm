@@ -11,8 +11,17 @@ uv pip install $THIS_REPO
 
 ## Usage
 
+
+You can either pass a .py file with your encoder defined inside, requiring the ending "Encoder":
+
 ```bash
 python3 -m xares_llm.run example/dummy/dummyencoder.py 
+```
+
+Or pass the module directly:
+
+```bash
+
 ```
 
 ### Single dataset training

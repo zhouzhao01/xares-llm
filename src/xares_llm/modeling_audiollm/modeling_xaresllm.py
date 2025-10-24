@@ -14,9 +14,7 @@ class XaresLLMModel(PreTrainedModel, nn.Module):
         for param in self.audio_encoder.parameters():
             param._requires_grad = False
         self.decoder = AutoModelForCausalLM.from_pretrained(config.decoder_type)
-        self.audio_projector = nn.Linear(
-            self.audio_encoder.output_dim, self.decoder.config.hidden_size
-        )
+        self.audio_projector = nn.Linear(self.audio_encoder.output_dim, self.decoder.config.hidden_size)
 
     def forward(self, audio, audio_attention_mask, input_ids, attention_mask, labels, **kwargs):
         with torch.no_grad():
@@ -38,9 +36,7 @@ class XaresLLMModel(PreTrainedModel, nn.Module):
         )
         print(audio_feature.shape, input_embeds.shape)
 
-        return self.decoder(
-            input_ids=None, inputs_embeds=input_embeds, labels=labels, attention_mask=attention_mask
-        )
+        return self.decoder(input_ids=None, inputs_embeds=input_embeds, labels=labels, attention_mask=attention_mask)
 
     def generate(self, mel):
         pass

@@ -8,7 +8,7 @@ from dataclasses import dataclass, field, asdict
 from loguru import logger
 from typing import Any, Callable, Dict, List
 
-from xares_llm.utils import seed_everything
+from xares_llm.utils import seed_everything, setup_global_logger
 from xares_llm.audiowebdataset import AudioTextDataType, AudioTextTokenWebdataset
 from xares_llm.trainer import XaresLLMEvaluator, XaresLLMTrainer
 from xares_llm.modeling_audiollm import XaresLLMModel, XaresLLMModelConfig
@@ -16,14 +16,22 @@ from xares_llm.metrics import get_metric, RegisteredMetricsLiteral
 import importlib
 import pprint
 
-AVAILABLE_SINGLE_TRAINING_CONFIGS = {"all": _ for _ in importlib.resources.files('xares_llm.tasks.all.train').iterdir()} | { str(Path(_).stem).replace('_config',''): _ for _ in importlib.resources.files('xares_llm.tasks.single.train').iterdir()}
-AVAILABLE_EVALUATION_CONFIGS =  {"all" : _ for _ in importlib.resources.files('xares_llm.tasks.all.eval').iterdir()} | {str(Path(_).stem).replace('_test_config',''): _ for _ in importlib.resources.files('xares_llm.tasks.single.eval').iterdir()} 
+AVAILABLE_SINGLE_TRAINING_CONFIGS = {
+    "all": _ for _ in importlib.resources.files("xares_llm.tasks.all.train").iterdir()
+} | {
+    str(Path(_).stem).replace("_config", ""): _
+    for _ in importlib.resources.files("xares_llm.tasks.single.train").iterdir()
+}
+AVAILABLE_EVALUATION_CONFIGS = {"all": _ for _ in importlib.resources.files("xares_llm.tasks.all.eval").iterdir()} | {
+    str(Path(_).stem).replace("_test_config", ""): _
+    for _ in importlib.resources.files("xares_llm.tasks.single.eval").iterdir()
+}
 
 
 @dataclass
 class XaresLLMTrainConfig:
     output_dir: str = "experiments/"
-    config_name: str  = "default"  # Will be set if loaded from a .yaml
+    config_name: str = "default"  # Will be set if loaded from a .yaml
 
     # General
     torch_num_threads: int = 1  # Do not use too many otherwise slows down
@@ -58,8 +66,8 @@ class XaresLLMTrainConfig:
     weight_decay: float = field(default=0.01)
     seed: int = field(default=42)
     torch_compile: bool = field(default=False)
-    bf16: bool  = False # WIll be set automatically
-    fp16: bool = False # Will be set automatically
+    bf16: bool = False  # WIll be set automatically
+    fp16: bool = False  # Will be set automatically
     max_grad_norm: float = field(default=1.0)
     logging_dir: str = "log"
     gradient_accumulation_steps: int = field(default=1)
@@ -68,7 +76,7 @@ class XaresLLMTrainConfig:
     learning_rate: float = 1e-4
     iterations: int = 100_000
     num_training_workers: int = 0
-    sort_by_length: int = 256 # Sort 256 samples by length, speedup training
+    sort_by_length: int = 256  # Sort 256 samples by length, speedup training
     # metric: METRICS_TYPE = "accuracy"
     metric_args: Dict[str, Any] = field(default_factory=lambda: dict())
 
@@ -84,16 +92,14 @@ class XaresLLMTrainConfig:
                 self.bf16 = False
 
         if isinstance(self.train_data, dict):
-            self.train_data = [
-                AudioTextDataType(name=k, **val) for k, val in self.train_data.items()
-            ]
+            self.train_data = [AudioTextDataType(name=k, **val) for k, val in self.train_data.items()]
         torch.set_num_threads(self.torch_num_threads)
-        seed_everything(self.seed)
 
+        setup_global_logger()
+        seed_everything(self.seed)
 
     def __repr__(self):
         return pprint.pformat(asdict(self))
-
 
     @classmethod
     def from_file(cls, config_file: str) -> XaresLLMTrainConfig:
@@ -135,9 +141,7 @@ class XaresLLMEvaluationConfig:
                     f"data and metric are required keys! Check config {yaml_config_file}\nMissing key: {e}"
                 )
                 raise KeyError(e)
-            evaluation_configs.append(
-                cls(data=AudioTextDataType(name=k, **data_kwargs), metric=metric, **values)
-            )
+            evaluation_configs.append(cls(data=AudioTextDataType(name=k, **data_kwargs), metric=metric, **values))
         return evaluation_configs
 
     def __repr__(self):
@@ -157,7 +161,7 @@ class XaresLLMTask:
     def __init__(self, audio_encoder: Callable, train_config: XaresLLMTrainConfig):
         self.audio_encoder = audio_encoder
         self.train_config = train_config
-        self.output_dir = Path(train_config.output_dir) / train_config.config_name /  audio_encoder.__class__.__name__
+        self.output_dir = Path(train_config.output_dir) / train_config.config_name / audio_encoder.__class__.__name__
         logger.info(f"Experiment output path set to {self.output_dir}")
         logger.info(f"Loading {train_config.decoder_model_name} tokenizer")
         self.tokenizer = AutoTokenizer.from_pretrained(train_config.decoder_model_name)
@@ -173,7 +177,7 @@ class XaresLLMTask:
             score = self.evaluate_mlp(trained_model=model, eval_config=eval_config)
 
             logger.info(f"{dataset_name}: [{eval_config.metric}]: {score:.2f}")
-            result.append({"Task": dataset_name, "score": score, 'weight':eval_config.weight})
+            result.append({"Task": dataset_name, "score": score, "weight": eval_config.weight})
         return result
 
     def train_mlp(self) -> XaresLLMModel:

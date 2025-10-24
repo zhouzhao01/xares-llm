@@ -1,4 +1,5 @@
 import argparse
+import json
 from typing import Dict, Any, List
 
 import pandas as pd
@@ -6,22 +7,35 @@ import torch
 from loguru import logger
 from pathlib import Path
 
-# from xares_llm.audio_encoder_checker import check_audio_encoder
-from xares_llm.task import XaresLLMTask, XaresLLMTrainConfig, XaresLLMEvaluationConfig, AVAILABLE_EVALUATION_CONFIGS, AVAILABLE_SINGLE_TRAINING_CONFIGS
-from xares_llm.utils import attr_from_py_path, setup_global_logger
+from xares_llm.task import (
+    XaresLLMTask,
+    XaresLLMTrainConfig,
+    XaresLLMEvaluationConfig,
+    AVAILABLE_EVALUATION_CONFIGS,
+    AVAILABLE_SINGLE_TRAINING_CONFIGS,
+)
+from xares_llm.utils import attr_from_py_path, attr_from_module
+from xares_llm.audio_encoder_checker import check_audio_encoder
 
 
 # Mappings from config.yaml -> Path to the config. By default we store most configs in the package tree, but users can also provide their own
 
 
 def main(args):
-    setup_global_logger()
     torch.multiprocessing.set_start_method("spawn")
-    train_config = args.train_config
-    logger.info(f"Training with Train config \n{args.train_config}\n Eval config: {args.eval_configs}")
 
-    audio_encoder = attr_from_py_path(args.encoder_py, endswith="Encoder")()
-    runner = XaresLLMTask(audio_encoder=audio_encoder,train_config=train_config)
+    if Path(args.encoder_py).is_file():
+        audio_encoder = attr_from_py_path(args.encoder_py, endswith="Encoder")(**args.model_args)
+    else:
+        audio_encoder = attr_from_module(args.encoder_py)(**args.model_args)
+    try:
+        check_audio_encoder(audio_encoder)
+    except Exception as e:
+        logger.exception(e)
+        return  # Error is raised inside
+
+    logger.info(f"Training with Train config \n{args.train_config}\n Eval config: {args.eval_configs}")
+    runner = XaresLLMTask(audio_encoder=audio_encoder, train_config=args.train_config)
     scores: List[Dict[str, Any]] = runner.run(args.eval_configs)
 
     logger.info("Scoring completed: All tasks scored.")
@@ -30,20 +44,22 @@ def main(args):
     df = pd.DataFrame(scores)
     df.sort_values(by="Task", inplace=True)
 
-    df['weighted_scores'] = df['score'] * df['weight']
-    new_row = pd.DataFrame({
-        'Task': 'Overall',
-        'score': (df['score'] * df['weight']).sum() / df['weight'].sum(),
-        'weight': df['weight'].sum()})
+    df["weighted_scores"] = df["score"] * df["weight"]
+    new_row = pd.DataFrame(
+        {
+            "Task": "Overall",
+            "score": (df["score"] * df["weight"]).sum() / df["weight"].sum(),
+            "weight": df["weight"].sum(),
+        }
+    )
     df = pd.concat((df, new_row), ignore_index=True)
     logger.info(f"\nResults:\n{df.to_string(index=False)}")
-    df.to_csv(Path(train_config.output_dir) / 'scores.tsv', sep='\t', index=False)
+    df.to_csv(Path(args.train_config.output_dir) / "scores.tsv", sep="\t", index=False)
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run XARES-LLM")
-    parser.add_argument(
-        "encoder_py", type=str, help="Encoder path. e.g.: example/dummy/dummyencoder.py"
-    )
+    parser.add_argument("encoder_py", type=str, help="Encoder path. e.g.: example/dummy/dummyencoder.py")
     parser.add_argument(
         "train_config",
         type=XaresLLMTrainConfig.from_file_or_key,
@@ -53,6 +69,12 @@ if __name__ == "__main__":
         "eval_configs",
         type=XaresLLMEvaluationConfig.configs_from_file_or_key,
         help=f"Evaluation Task .yaml. One Yaml can specify multiple datasets. By default we use the XARES-LLM datasets. Datasets are : {list(AVAILABLE_EVALUATION_CONFIGS.keys())} ",
+    )
+    parser.add_argument(
+        "--model_args",
+        type=lambda arg: json.loads(arg),
+        help="Additional args passed to the encoder model. Format is JSON like: --model_args {'my_paramter1':2, 'my_paramter2':30}",
+        default={},
     )
     args = parser.parse_args()
     main(args)
