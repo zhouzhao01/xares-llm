@@ -483,14 +483,14 @@ class AudioTextTokenWebdataset:
         ).unbatched()
         if self.training:
             dataloader = dataloader.shuffle(self.shuffle)
-            if self.sort_by_length:
-                dataloader = dataloader.compose(
-                    sort_by_length(
-                        bufsize=self.sort_by_length,
-                        reverse=True,
-                        sort_function=lambda item: len(item["input_ids"]),
-                    )
+        if self.sort_by_length:
+            dataloader = dataloader.compose(
+                sort_by_length(
+                    bufsize=self.sort_by_length,
+                    reverse=True,
+                    sort_function=lambda item: len(item["input_ids"]),
                 )
+            )
         collate_fn = collate_fn or self._default_collate_fn
 
         dataloader = dataloader.batched(

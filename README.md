@@ -21,7 +21,7 @@ python3 -m xares_llm.run example/dummy/dummyencoder.py
 Or pass the module directly:
 
 ```bash
-
+python3 -m xares_llm.run example.dummy.dummyencoder.DummyEncoder
 ```
 
 ### Single dataset training
@@ -31,6 +31,9 @@ Here we train on clotho and test on clotho.
 
 ```bash
 python3 -m xares_llm.run example/dummy/dummyencoder.py clotho clotho
+# Or for the Module interface
+# python3 -m xares_llm.run example.dummy.dummyencoder.DummyEncoder clotho clotho
+
 ```
 
 

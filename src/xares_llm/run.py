@@ -12,7 +12,7 @@ from xares_llm.task import (
     XaresLLMTrainConfig,
     XaresLLMEvaluationConfig,
     AVAILABLE_EVALUATION_CONFIGS,
-    AVAILABLE_SINGLE_TRAINING_CONFIGS,
+    AVAILABLE_TRAINING_CONFIGS,
 )
 from xares_llm.utils import attr_from_py_path, attr_from_module
 from xares_llm.audio_encoder_checker import check_audio_encoder
@@ -24,10 +24,10 @@ from xares_llm.audio_encoder_checker import check_audio_encoder
 def main(args):
     torch.multiprocessing.set_start_method("spawn")
 
-    if Path(args.encoder_py).is_file():
-        audio_encoder = attr_from_py_path(args.encoder_py, endswith="Encoder")(**args.model_args)
+    if Path(args.encoder_path).is_file():
+        audio_encoder = attr_from_py_path(args.encoder_path, endswith="Encoder")(**args.model_args)
     else:
-        audio_encoder = attr_from_module(args.encoder_py)(**args.model_args)
+        audio_encoder = attr_from_module(args.encoder_path)(**args.model_args)
     try:
         check_audio_encoder(audio_encoder)
     except Exception as e:
@@ -59,11 +59,11 @@ def main(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run XARES-LLM")
-    parser.add_argument("encoder_py", type=str, help="Encoder path. e.g.: example/dummy/dummyencoder.py")
+    parser.add_argument("encoder_path", type=str, help="Encoder path. e.g.: example/dummy/dummyencoder.py or path to the module (including class) e.g., example.dummy.dummyencoder.DummyEncoder")
     parser.add_argument(
         "train_config",
         type=XaresLLMTrainConfig.from_file_or_key,
-        help=f"Tasks .yaml or predefined dataset. Datasets are: {list(AVAILABLE_SINGLE_TRAINING_CONFIGS.keys())}",
+        help=f"Tasks .yaml or predefined dataset. Datasets are: {list(AVAILABLE_TRAINING_CONFIGS.keys())}",
     )
     parser.add_argument(
         "eval_configs",

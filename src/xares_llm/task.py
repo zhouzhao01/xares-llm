@@ -16,7 +16,7 @@ from xares_llm.metrics import get_metric, RegisteredMetricsLiteral
 import importlib
 import pprint
 
-AVAILABLE_SINGLE_TRAINING_CONFIGS = {
+AVAILABLE_TRAINING_CONFIGS = {
     "all": _ for _ in importlib.resources.files("xares_llm.tasks.all.train").iterdir()
 } | {
     str(Path(_).stem).replace("_config", ""): _
@@ -40,11 +40,8 @@ class XaresLLMTrainConfig:
 
     train_data: List[AudioTextDataType] | None = None
 
-    # MLP And decoder
+    # decoder
     decoder_model_name: str = "gpt2"
-    ckpt_dir_name = "checkpoints"
-    embedding_dir_name = "embeddings"
-    ckpt_name = "best.ckpt"
 
     # Dataloader/dataset arguments
     seed: int = field(default=42)
@@ -110,8 +107,8 @@ class XaresLLMTrainConfig:
 
     @classmethod
     def from_file_or_key(cls, config_identifier: str) -> XaresLLMTrainConfig:
-        if config_identifier in AVAILABLE_SINGLE_TRAINING_CONFIGS:
-            return cls.from_file(AVAILABLE_SINGLE_TRAINING_CONFIGS[config_identifier])
+        if config_identifier in AVAILABLE_TRAINING_CONFIGS:
+            return cls.from_file(AVAILABLE_TRAINING_CONFIGS[config_identifier])
         path_obj = Path(config_identifier)
         if path_obj.is_file():
             return cls.from_file(config_identifier)
@@ -243,7 +240,7 @@ class XaresLLMTask:
             tokenizer=tokenizer,
             training=False,
             batch_size=eval_config.batch_size,
-            sort_by_length=256,
+            sort_by_length=256, # just to speed up a bit
             num_workers=eval_config.num_workers,
         )
         evaluator = XaresLLMEvaluator(
