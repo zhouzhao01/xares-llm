@@ -351,7 +351,7 @@ def create_audio_text_token_pipeline(
     training: bool = False,
     batch_size: int = 1,
     resample: bool = False,
-    handler: Callable = wds.reraise_exception,
+    handler: Callable = warn_and_continue,
     **filtering_kwargs,
 ) -> wds.DataPipeline:
     pipeline: List = []
