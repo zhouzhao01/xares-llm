@@ -1,7 +1,8 @@
 train_data:
   GTZAN:
     prompt: Classify the music genre (GTZAN).
+    repo_id: mispeech/xares_llm_data
     data:
-    - env/GTZAN/train/gtzan_fold_{0..8}_0000000.tar.gz
+    - GTZAN/train/gtzan_fold_{0..8}_0000000.tar.gz
     key: genre
 num_training_workers: 4

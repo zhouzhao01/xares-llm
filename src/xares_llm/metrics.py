@@ -1,8 +1,10 @@
 from typing import Literal, List
 import numpy as np
+from sklearn.metrics import accuracy_score, average_precision_score
 from transformers import EvalPrediction
 from jiwer import cer, wer
 import unicodedata
+import string
 import re
 
 
@@ -56,25 +58,27 @@ class TokenDecoder:
 
 
 @MetricRegistry.register
-class WER:
+class iWER:
     def __init__(self, tokenizer, **kwargs):
         self.tokendecoder = TokenDecoder(tokenizer)
         super().__init__(**kwargs)
 
     def __call__(self, pred: EvalPrediction):
         preds, targets = self.tokendecoder.decode_predictions(pred)
-        return {"WER": wer(list(map(preprocess_string, targets)), list(map(preprocess_string, preds)))}
+        wer_score = wer(list(map(preprocess_string, targets)), list(map(preprocess_string, preds)))
+        return {'iWER': max(0, 1. - wer_score)} 
 
 
 @MetricRegistry.register
-class CER:
+class iCER:
     def __init__(self, tokenizer, **kwargs):
         self.tokendecoder = TokenDecoder(tokenizer)
         super().__init__(**kwargs)
 
     def __call__(self, pred: EvalPrediction):
         preds, targets = self.tokendecoder.decode_predictions(pred)
-        return {"CER": cer(list(map(preprocess_string, targets)), list(map(preprocess_string, preds)))}
+        cer_score = cer(list(map(preprocess_string, targets)), list(map(preprocess_string, preds)))
+        return {'iCER': max(0, 1. - cer_score)} 
 
 
 @MetricRegistry.register
@@ -85,8 +89,24 @@ class Accuracy:
 
     def __call__(self, pred: EvalPrediction):
         preds, targets = self.tokendecoder.decode_predictions(pred)
-        return {"CER": cer(list(map(preprocess_string, targets)), list(map(preprocess_string, preds)))}
+        preds = list(map(preprocess_string, preds))
+        targets = list(map(preprocess_string, targets))
+        return {"Accuracy": accuracy_score(targets, preds)} # scikit supports strings 
 
+
+
+@MetricRegistry.register
+class mAP:
+    def __init__(self, tokenizer, num_classes:int, **kwargs):
+        self.tokendecoder = TokenDecoder(tokenizer)
+        self.num_classes = num_classes
+        super().__init__(**kwargs)
+
+    def __call__(self, pred: EvalPrediction):
+        preds, targets = self.tokendecoder.decode_predictions(pred)
+        preds = list(map(preprocess_string, preds))
+        targets = list(map(preprocess_string, targets))
+        return {"Accuracy": accuracy_score(targets, preds)} # scikit supports strings 
 
 RegisteredMetricsLiteral = MetricRegistry.get_registered_names()
 

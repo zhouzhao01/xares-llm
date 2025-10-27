@@ -1,8 +1,8 @@
 eval_aishell-1:
   prompt: Transcribe the Chinese speech into text.
-  key: text;caption;captions;label;labels
+  key: text
   data:
-  - env/AISHELL-1/test/test_0000000.tar.gz
+  - env/AISHELL-1/test/test_0000{000..011}.tar.gz
   batch_size: 4
   num_workers: 0
   metric: iCER
@@ -90,7 +90,7 @@ eval_nsynth:
   prompt: Classify the music instrument.
   key: text;caption;captions;label;labels
   data:
-  - env/NSynth/test/test_0000000.tar.gz
+  - env/NSynth/test/test_00000{0..5}.tar.gz
   batch_size: 4
   num_workers: 0
   metric: Accuracy

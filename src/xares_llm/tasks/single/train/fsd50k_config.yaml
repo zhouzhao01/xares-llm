@@ -2,6 +2,7 @@ train_data:
   FSD50k:
     prompt: Multi-label classification for FSD50k
     data:
-    - env/FSD50k/train/train_with_text_0000{00..08}.tar.gz
+    - FSD50k/train/train_with_text_0000{00..08}.tar.gz
     key: label;labels
+    repo_id: mispeech/xares_llm_data
 num_training_workers: 4

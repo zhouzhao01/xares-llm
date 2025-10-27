@@ -75,8 +75,6 @@ class XaresLLMTrainConfig:
     iterations: int = 100_000
     num_training_workers: int = 0
     sort_by_length: int = 256  # Sort 256 samples by length, speedup training
-    # metric: METRICS_TYPE = "accuracy"
-    metric_args: Dict[str, Any] = field(default_factory=lambda: dict())
 
     def __post_init__(self):
         # torch.cuda.is_bf16_supported() does return True on V100, support is there ... but no speedup
@@ -120,6 +118,7 @@ class XaresLLMTrainConfig:
 class XaresLLMEvaluationConfig:
     data: AudioTextDataType
     metric: RegisteredMetricsLiteral
+    metric_args: Dict[str, Any] = field(default_factory=lambda: dict())
     batch_size: int = 1
     num_workers: int = 0
     weight: float = 1

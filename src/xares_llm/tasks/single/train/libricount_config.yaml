@@ -2,6 +2,7 @@ train_data:
   LibriCount:
     prompt: Count the amount of speakers.
     data:
-    - env/LibriCount/train/libricount_fold{00..03}.tar.gz
+    - LibriCount/train/libricount_fold{00..03}.tar.gz
     key: num_speakers
+    repo_id: mispeech/xares_llm_data
 num_training_workers: 4

@@ -28,13 +28,13 @@ train_data:
     NSynth:
         prompt: Classify the music instrument.
         data:
-            - env/NSynth/train/train_00000{00..28}.tar.gz
+            - env/NSynth/train/train_000{000..371}.tar.gz
         key: instrument_family_str
     AISHELL-1:
         prompt: Transcribe the Chinese speech into text.
         data:
-            - env/AISHELL-1/train/train_00000{00..12}.tar.gz
-        key: text;caption;captions;label;labels
+            - env/AISHELL-1/train/train_0000{000..173}.tar.gz
+        key: text
     CremaD:
         prompt: Identify the emotion expressed in the speech.
         data:

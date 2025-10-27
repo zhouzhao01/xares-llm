@@ -39,6 +39,7 @@ class AudioTextDataType:
     key: str | None = None  # Can be either a single field (labels) or a selection: (labels;label)
     name: str | None = None  # Just a filler to name the data
     prob: float | None = None
+    repo_id: str | None = None # Repo id in case of a hf repo
 
 
 InputUrlType = List[AudioTextDataType] | AudioTextDataType | List[str] | str
@@ -53,6 +54,14 @@ def parse_input_to_datatype(data_urls: InputUrlType) -> List[AudioTextDataType]:
         return [AudioTextDataType(data=[url]) for url in data_urls]
     else:
         return data_urls
+
+
+def resolve_url(file_path:str, repo_id: str  | None = None) -> str:
+    if repo_id is None:
+        return file_path
+    from huggingface_hub import hf_hub_url
+    base_url = hf_hub_url(repo_id=repo_id, filename=file_path, repo_type='dataset')
+    return f"{base_url}?download=true"
 
 
 def _is_corrupted_text(text: str) -> bool:
@@ -438,7 +447,7 @@ class AudioTextTokenWebdataset:
     def __post_init__(self):
         if hasattr(self.tokenizer, "pad_token") and self.tokenizer.pad_token is None:
             self.tokenizer.pad_token = self.tokenizer.eos_token
-        self.cache_dir = self.cache_dir if self.cache_dir is not "" else CACHE_DIR
+        self.cache_dir = self.cache_dir if self.cache_dir != "" else CACHE_DIR
 
     def create_dataset(self) -> wds.DataPipeline:
         data_urls = parse_input_to_datatype(self.data_urls)
@@ -448,7 +457,7 @@ class AudioTextTokenWebdataset:
         )
         for data_type in data_urls:
             ds = create_audio_text_token_pipeline(
-                urls=expand_path(data_type.data),
+                urls=expand_path(data_type),
                 prompt=data_type.prompt,
                 text_data_key=data_type.key,
                 tokenizer=self.tokenizer,
@@ -550,8 +559,11 @@ class SequentialDatasetSampler(wds.DataPipeline, wds.compat.FluidInterface):
             yield from source
 
 
-def expand_path(pattern: str | List[str]) -> List[str]:
+# def expand_path(pattern: str | List[str]) -> List[str]:
+def expand_path(data_type : AudioTextDataType) -> List[str]:
     import braceexpand, glob
+
+    pattern = data_type.data
 
     if isinstance(pattern, str):
         pattern_list = [pattern]
@@ -560,21 +572,27 @@ def expand_path(pattern: str | List[str]) -> List[str]:
     else:
         return []
     all_final_matches: List[str] = []
-    for pattern in pattern_list:
-        scheme = urlparse(pattern).scheme
-        if scheme != "":  # Is HTTPS or internet-y
-            all_final_matches.append(pattern)
-        else:
-            intermediate_patterns: List[str] = list(braceexpand.braceexpand(pattern))
-            has_glob_chars = any(c in pattern for c in "*?[]")
 
-            for p in intermediate_patterns:
-                expanded_p = os.path.expanduser(p)
-                matches = glob.glob(expanded_p)
-                if not matches and not has_glob_chars:
-                    all_final_matches.append(expanded_p)
-                else:
-                    all_final_matches.extend(matches)
+    # Passed a hf dataset
+    if data_type.repo_id is not None:
+        for url in pattern_list:
+            all_final_matches.append(resolve_url(url, repo_id=data_type.repo_id))
+    else:
+        for pattern in pattern_list:
+            scheme = urlparse(pattern).scheme
+            if scheme != "":  # Is HTTPS or internet-y, Just use the provided link directly
+                all_final_matches.append(pattern)
+            else:
+                intermediate_patterns: List[str] = list(braceexpand.braceexpand(pattern))
+                has_glob_chars = any(c in pattern for c in "*?[]")
+
+                for p in intermediate_patterns:
+                    expanded_p = os.path.expanduser(p)
+                    matches = glob.glob(expanded_p)
+                    if not matches and not has_glob_chars:
+                        all_final_matches.append(expanded_p)
+                    else:
+                        all_final_matches.extend(matches)
     return sorted(list(set(all_final_matches)))
 
 

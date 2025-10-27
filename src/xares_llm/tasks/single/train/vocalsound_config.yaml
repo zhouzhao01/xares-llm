@@ -2,6 +2,7 @@ train_data:
   VocalSound:
     prompt: Classify the vocal sound.
     data:
-    - env/VocalSound/train/train_with_text_0000{00..20}.tar.gz
+    - VocalSound/train/train_with_text_0000{00..20}.tar.gz
     key: text;caption;captions;label;labels
+    repo_id: mispeech/xares_llm_data
 num_training_workers: 4

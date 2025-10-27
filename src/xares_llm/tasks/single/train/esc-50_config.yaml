@@ -2,6 +2,7 @@ train_data:
   ESC-50:
     prompt: Classify the environmental sound.
     data:
-    - env/ESC-50/train/esc50_fold_{1..4}_0000000.tar.gz
+    - ESC-50/train/esc50_fold_{1..4}_0000000.tar.gz
     key: text;caption;captions;label;labels
+    repo_id: mispeech/xares_llm_data
 num_training_workers: 4

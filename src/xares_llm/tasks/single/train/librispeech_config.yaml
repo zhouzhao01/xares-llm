@@ -2,6 +2,7 @@ train_data:
   LibriSpeech:
     prompt: Transcribe the English speech into text
     data:
-    - env/LibriSpeech/train/train-clean-100-0000{00..19}.tar.gz
+    - LibriSpeech/train/train-clean-100-0000{00..19}.tar.gz
     key: trans
+    repo_id: mispeech/xares_llm_data
 num_training_workers: 4

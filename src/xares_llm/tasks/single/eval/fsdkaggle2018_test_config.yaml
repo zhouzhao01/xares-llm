@@ -1,9 +1,10 @@
 eval_fsdkaggle2018:
   data:
     data:
-    - env/FSDKaggle2018/test/test_with_text_0000{00..02}.tar.gz
+    - FSDKaggle2018/test/test_with_text_0000{00..02}.tar.gz
     key: label;labels
     prompt: Multi-label classification for FSDKaggle2018
+    repo_id: mispeech/xares_llm_data
   batch_size: 4
   num_workers: 0
   metric: mAP
