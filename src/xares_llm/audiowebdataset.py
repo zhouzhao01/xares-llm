@@ -56,12 +56,17 @@ def parse_input_to_datatype(data_urls: InputUrlType) -> List[AudioTextDataType]:
         return data_urls
 
 
-def resolve_url(file_path:str, repo_id: str  | None = None) -> str:
+def resolve_url(file_path:str, repo_id: str  | None = None, repo_type_url_segment: str = 'datasets') -> str:
     if repo_id is None:
         return file_path
-    from huggingface_hub import hf_hub_url
-    base_url = hf_hub_url(repo_id=repo_id, filename=file_path, repo_type='dataset')
-    return f"{base_url}?download=true"
+    from urllib.parse import urljoin
+    # So hf_hub_url will malform {0..10}.tar, thus we use a custom function
+    # from huggingface_hub import hf_hub_url
+    hf_endpoint = os.environ.get("HF_ENDPOINT", "https://huggingface.co")
+    path_to_file = f"/{repo_type_url_segment}/{repo_id}/resolve/main/{file_path}"
+    base_url = urljoin(hf_endpoint, path_to_file)
+    download_url =  f"{base_url}?download=true"
+    return download_url
 
 
 def _is_corrupted_text(text: str) -> bool:
@@ -575,13 +580,15 @@ def expand_path(data_type : AudioTextDataType) -> List[str]:
 
     # Passed a hf dataset
     if data_type.repo_id is not None:
-        for url in pattern_list:
-            all_final_matches.append(resolve_url(url, repo_id=data_type.repo_id))
+        for pattern in pattern_list:
+            for url in braceexpand.braceexpand(pattern):
+                all_final_matches.append(resolve_url(url, repo_id=data_type.repo_id))
     else:
         for pattern in pattern_list:
             scheme = urlparse(pattern).scheme
             if scheme != "":  # Is HTTPS or internet-y, Just use the provided link directly
-                all_final_matches.append(pattern)
+                for url in braceexpand.braceexpand(pattern):
+                    all_final_matches.append(url)
             else:
                 intermediate_patterns: List[str] = list(braceexpand.braceexpand(pattern))
                 has_glob_chars = any(c in pattern for c in "*?[]")
@@ -593,6 +600,7 @@ def expand_path(data_type : AudioTextDataType) -> List[str]:
                         all_final_matches.append(expanded_p)
                     else:
                         all_final_matches.extend(matches)
+    print(f"{all_final_matches=}")
     return sorted(list(set(all_final_matches)))
 
 
