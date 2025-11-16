@@ -1,6 +1,9 @@
 # XARES-LLM
 
-XARES-LLM 2026 Challenge baseline and evaluation code.
+XARES-LLM trains a typical LALM using the audio encoder provided by the user. 
+The system automatically downloads training data, trains the LALM then tests various downstream tasks, providing scores for each. 
+
+<img src="xares-llm.png" alt="framework" width="75%">
 
 ## Installation
 
