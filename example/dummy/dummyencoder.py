@@ -7,6 +7,6 @@ class DummyEncoder(torch.nn.Module):
         self.output_dim = 256
 
     def forward(self, audio, audio_attention_mask=None) -> tuple[torch.Tensor, torch.Tensor | None]:
-        output = torch.randn(len(audio), 10, self.output_dim)
+        output = torch.randn(len(audio), 10, self.output_dim, device=audio.device)
         # Do something with attention mask or just return None, both are alright
         return output, audio_attention_mask

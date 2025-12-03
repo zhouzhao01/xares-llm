@@ -36,8 +36,6 @@ from xares_llm.audio_encoder_checker import check_audio_encoder
 
 
 def main(args):
-    torch.multiprocessing.set_start_method("spawn")
-
     if Path(args.encoder_path).is_file():
         audio_encoder = attr_from_py_path(args.encoder_path, endswith="Encoder")(**args.model_args)
     else:

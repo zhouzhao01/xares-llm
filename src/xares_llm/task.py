@@ -82,7 +82,7 @@ class XaresLLMTrainConfig:
     weight_decay: float = field(default=0.01)
     seed: int = field(default=42)
     torch_compile: bool = field(default=False)
-    bf16: bool = False  # WIll be set automatically
+    bf16: bool = False  # Will be set automatically
     fp16: bool = False  # Will be set automatically
     max_grad_norm: float = field(default=1.0)
     logging_dir: str = "log"
@@ -91,7 +91,7 @@ class XaresLLMTrainConfig:
     batch_size_train: int = 16
     learning_rate: float = 1e-4
     iterations: int = 100_000
-    num_training_workers: int = 0
+    num_training_workers: int = 4
     sort_by_length: int = 256  # Sort 256 samples by length, speedup training
 
     def __post_init__(self):
@@ -230,7 +230,6 @@ class XaresLLMTask:
             logging_dir=Path(self.output_dir) / self.train_config.logging_dir,
             gradient_accumulation_steps=self.train_config.gradient_accumulation_steps,
         )
-
         trainer = XaresLLMTrainer(model, training_args, train_data_object=data_object)
         trainer.train()
         return model

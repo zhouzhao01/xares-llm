@@ -413,7 +413,6 @@ def create_audio_text_token_pipeline(
                 wds.split_by_node,
             ]
         )
-
     pipeline.extend(
         [
             wds.decode(decode_torch_audio, handler=handler),
@@ -474,7 +473,7 @@ class AudioTextTokenWebdataset:
         data_urls = parse_input_to_datatype(self.data_urls)
         datasets = []
         logger.info(
-            f"Pipeline start: Training={self.training}, Resampling={self.resample}, Batch={self.batch_size}, Cacheing at {self.cache_dir}"
+            f"Pipeline start: Training={self.training}, Resampling={self.resample}, Batch={self.batch_size}, Caching at {self.cache_dir}"
         )
         for data_type in data_urls:
             ds = create_audio_text_token_pipeline(
