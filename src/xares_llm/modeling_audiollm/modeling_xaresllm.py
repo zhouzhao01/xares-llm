@@ -25,16 +25,31 @@ class XaresLLMModel(PreTrainedModel, nn.Module):
         super().__init__(config)
         self.config = config
         self.audio_encoder = audio_encoder
+        self.audio_encoder.eval()
         for param in self.audio_encoder.parameters():
             param._requires_grad = False
+
         self.decoder = AutoModelForCausalLM.from_pretrained(config.decoder_type)
         self.audio_projector = nn.Linear(self.audio_encoder.output_dim, self.decoder.config.hidden_size)
+        self.generation_config = object
 
-    def forward(self, audio, audio_attention_mask, input_ids, attention_mask, labels, **kwargs):
-        with torch.no_grad():
-            with torch.autocast(device_type="cuda"):
+    @property
+    def device(self):
+        return list(self.parameters())[0].device
+
+    def _prepare_multimodal_inputs(self, audio, audio_attention_mask, input_ids, attention_mask, labels):
+        inputs_to_device = [audio, audio_attention_mask, input_ids, attention_mask, labels]
+        audio, audio_attention_mask, input_ids, attention_mask, labels = (
+                t.to(self.device) for t in inputs_to_device
+                )
+        mel_attention_mask = None
+        with torch.autocast(device_type="cuda"):
+            with torch.no_grad():
                 audio_feature, mel_attention_mask = self.audio_encoder(audio, audio_attention_mask)
-                audio_feature = self.audio_projector(audio_feature)
+                audio_feature = audio_feature.to(self.device)  # returned tensor might be on cpu
+            audio_feature = self.audio_projector(audio_feature)
+        if mel_attention_mask is None:
+            mel_attention_mask = torch.ones(*audio_feature.shape[:2], device=attention_mask.device)
         # An error occurs if .get_input_embeddings() is used with self.input_embeds = ...
         input_embeds = self.decoder.get_input_embeddings()(input_ids)  # Int -> Float
 
@@ -44,13 +59,17 @@ class XaresLLMModel(PreTrainedModel, nn.Module):
             audio_feature.shape[:2], device=audio_feature.device, dtype=torch.int, fill_value=-100
         )
         labels = torch.cat((zero_audio_targets, labels), dim=1)
-        attention_mask = torch.cat(
-            (torch.ones(*audio_feature.shape[:2], device=attention_mask.device), attention_mask),
+        attention_mask = torch.cat((mel_attention_mask, attention_mask),
             dim=1,
         )
-        print(audio_feature.shape, input_embeds.shape)
+        return input_embeds, attention_mask, labels
 
+
+    def forward(self, audio, audio_attention_mask, input_ids, attention_mask, labels, **kwargs):
+        input_embeds, attention_mask, labels = self._prepare_multimodal_inputs(audio, audio_attention_mask,input_ids, attention_mask, labels)
         return self.decoder(input_ids=None, inputs_embeds=input_embeds, labels=labels, attention_mask=attention_mask)
 
-    def generate(self, mel):
-        pass
+    @torch.no_grad()
+    def generate(self, audio, audio_attention_mask, input_ids, attention_mask, labels, **gen_kwargs):
+        input_embeds, attention_mask, labels = self._prepare_multimodal_inputs(audio, audio_attention_mask,input_ids, attention_mask, labels)
+        return self.decoder.generate(input_ids=None, inputs_embeds=input_embeds, labels=labels, attention_mask=attention_mask, **gen_kwargs)
