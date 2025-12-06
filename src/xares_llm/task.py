@@ -240,7 +240,6 @@ class XaresLLMTask:
         )
         self.trainer.train_data_object = train_data_object
         self.trainer.train()
-        logger.info(f"Finished training: {self.train_config.output_dir}")
         return self.trainer.model
 
     def evaluate_mlp(
