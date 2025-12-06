@@ -14,18 +14,30 @@
 
 import torch
 import torch.nn as nn
+from pathlib import Path
+from loguru import logger
 from transformers import AutoModelForCausalLM, PreTrainedModel
-from transformers.loss.loss_utils import ForCausalLMLoss
 from peft import get_peft_model, LoraConfig, TaskType
-from .configuration_xaresllm import XaresLLMModelConfig
 
+from xares_llm.utils import attr_from_module, attr_from_py_path
+from xares_llm.audio_encoder_checker import check_audio_encoder
+from xares_llm.modeling_audiollm.configuration_xaresllm import XaresLLMModelConfig
 
 class XaresLLMModel(PreTrainedModel, nn.Module):
     config_class = XaresLLMModelConfig
 
-    def __init__(self, config: XaresLLMModelConfig, audio_encoder) -> None:
+    def __init__(self, config: XaresLLMModelConfig) -> None:
         super().__init__(config)
         self.config = config
+        if Path(self.config.audio_encoder_name).is_file():
+            audio_encoder = attr_from_py_path(self.config.audio_encoder_name, endswith="Encoder")(**self.config.audio_encoder_params)
+        else:
+            audio_encoder = attr_from_module(self.config.audio_encoder_name)(**self.config.audio_encoder_params)
+        try:
+            check_audio_encoder(audio_encoder)
+        except Exception as e:
+            logger.exception(e)
+            return  # Error is raised inside
         self.audio_encoder = audio_encoder
         self.audio_encoder.eval()
         for param in self.audio_encoder.parameters():

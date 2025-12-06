@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from transformers.configuration_utils import PretrainedConfig
+from typing import Dict, Any
 
 
 class XaresLLMModelConfig(PretrainedConfig):
@@ -20,11 +21,15 @@ class XaresLLMModelConfig(PretrainedConfig):
 
     def __init__(
         self,
+        audio_encoder_name: str |None = None,
+        audio_encoder_params: Dict[str,Any] = {},
         decoder_type: str = "gpt2",
         **kwargs,
     ):
         super().__init__(**kwargs)
         self.decoder_type = decoder_type
+        self.audio_encoder_name = audio_encoder_name
+        self.audio_encoder_params = audio_encoder_params
 
 
 __all__ = ["XAresLLMModelConfig"]

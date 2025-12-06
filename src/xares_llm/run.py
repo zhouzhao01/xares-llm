@@ -37,7 +37,7 @@ def main(args):
     eval_configs = XaresLLMEvaluationConfig.configs_from_file_or_key(args.eval_configs)
 
     logger.info(f"Training with Train config \n{train_config}\n Eval config: {eval_configs}")
-    runner = XaresLLMTask(args.train_config)
+    runner = XaresLLMTask(train_config)
     scores: List[Dict[str, Any]] = runner.run(args.eval_configs)
 
     logger.info("Scoring completed: All tasks scored.")

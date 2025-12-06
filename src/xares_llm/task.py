@@ -23,15 +23,13 @@ from transformers import AutoTokenizer, TrainingArguments
 import yaml
 from dataclasses import dataclass, field, asdict
 from loguru import logger
-import datetime
-from typing import Any, Callable, Dict, List
+from typing import Any, Dict, List
 
-from xares_llm.utils import seed_everything, setup_global_logger, attr_from_module, attr_from_py_path
+from xares_llm.utils import seed_everything, setup_global_logger
 from xares_llm.audiowebdataset import AudioTextDataType, AudioTextTokenWebdataset
 from xares_llm.trainer import XaresLLMTrainerEvaluator
 from xares_llm.modeling_audiollm import XaresLLMModel, XaresLLMModelConfig
 from xares_llm.metrics import get_metric, RegisteredMetricsLiteral
-from xares_llm.audio_encoder_checker import check_audio_encoder
 import importlib
 import pprint
 
@@ -94,15 +92,6 @@ class XaresLLMTrainConfig:
     sort_by_length: int = 128  # Sort 128 samples by length
 
     def __post_init__(self):
-        if Path(self.audio_encoder_module_path).is_file():
-            audio_encoder = attr_from_py_path(self.audio_encoder_module_path, endswith="Encoder")(**self.audio_encoder_kwargs)
-        else:
-            audio_encoder = attr_from_module(self.audio_encoder_module_path)(**self.audio_encoder_kwargs)
-        try:
-            check_audio_encoder(audio_encoder)
-        except Exception as e:
-            logger.exception(e)
-            return  # Error is raised inside
         # torch.cuda.is_bf16_supported() does return True on V100, support is there ... but no speedup
         if torch.cuda.is_available():
             has_bf16support = torch.cuda.get_device_capability(torch.device("cuda"))[0] > 7
@@ -185,10 +174,12 @@ class XaresLLMEvaluationConfig:
 
 class XaresLLMTask:
     def __init__(self, train_config: XaresLLMTrainConfig):
-        self.audio_encoder = train_config.audio_encoder_module_path(**train_config.audio_encoder_kwargs)
         self.train_config = train_config
-        current_time_str = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-        self.output_dir = Path(train_config.output_dir) / train_config.config_name / self.audio_encoder.__class__.__name__ / current_time_str
+        if Path(self.train_config.audio_encoder_module_path).is_file():
+            model_name = self.train_config.audio_encoder_module_path.split('/')[-1]
+        else:
+            model_name = self.train_config.audio_encoder_module_path.split('.')[-1]
+        self.output_dir = Path(train_config.output_dir) / train_config.config_name / model_name 
         logger.add(
                 self.output_dir / "log.txt",
                 enqueue=True,
@@ -218,8 +209,7 @@ class XaresLLMTask:
         )
         # Lazy init, during .train() or .eval()
         model_init_function = lambda : XaresLLMModel(
-                config=XaresLLMModelConfig(decoder_type=self.train_config.decoder_model_name),
-                audio_encoder=self.audio_encoder,
+                config=XaresLLMModelConfig(decoder_type=self.train_config.decoder_model_name, audio_encoder_name=self.train_config.audio_encoder_module_path, audio_encoder_params=self.train_config.audio_encoder_kwargs),
             )
         self.trainer = XaresLLMTrainerEvaluator(model=None, model_init=model_init_function, args=training_args)
 
