@@ -13,16 +13,9 @@
 # limitations under the License.
 
 from loguru import logger
-import torch
 from transformers import Trainer, ProgressCallback
 from xares_llm.audiowebdataset import AudioTextTokenWebdataset
 
-
-class HackyModel(torch.nn.Module):
-    def __init__(self, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
-    def forward(self, **kwargs):
-        return kwargs
 
 class LoguruMetricsCallback(ProgressCallback):
 
@@ -55,6 +48,7 @@ class XaresLLMTrainerEvaluator(Trainer):
 
     def prediction_step(self, model, inputs, prediction_loss_only, ignore_keys=None):
         generated_ids = model.generate(**inputs, repetition_penalty=1.05, max_length=256)
+        print(f"{generated_ids=}")
         labels = inputs.get('labels')
         return (None, generated_ids, labels)
 
