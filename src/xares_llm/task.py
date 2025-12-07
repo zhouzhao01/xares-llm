@@ -88,7 +88,7 @@ class XaresLLMTrainConfig:
     max_grad_norm: float = field(default=1.0)
     logging_dir: str = "log"
     logging_steps: int = 100
-    num_training_workers: int = 4
+    num_training_workers: int = 0
     sort_by_length: int = 128  # Sort 128 samples by length
 
     def __post_init__(self):
@@ -240,6 +240,7 @@ class XaresLLMTask:
         )
         self.trainer.train_data_object = train_data_object
         self.trainer.train()
+        logger.info(f"Finished training: {self.output_dir}")
         return self.trainer.model
 
     def evaluate_mlp(
@@ -269,7 +270,7 @@ class XaresLLMTask:
             num_workers=eval_config.num_workers,
         )
         # remove LoRA to speed up inference
-        self.trainer.model = self.trainer.model.decoder.merge_and_unload()
+        self.trainer.model.merge_and_unload()
         self.trainer.compute_metrics = metrics_compute_function
         return self.trainer.evaluate(eval_dataset = data_object_eval)
 

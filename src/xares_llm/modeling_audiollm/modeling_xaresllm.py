@@ -58,6 +58,9 @@ class XaresLLMModel(PreTrainedModel, nn.Module):
 
         self.audio_projector = nn.Linear(self.audio_encoder.output_dim, self.decoder.config.hidden_size)
 
+    def merge_and_unload(self):
+        self.decoder = self.decoder.merge_and_unload()
+
     @property
     def device(self):
         return next(self.parameters()).device
