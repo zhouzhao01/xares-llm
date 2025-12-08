@@ -51,4 +51,3 @@ class XaresLLMTrainerEvaluator(Trainer):
         labels = inputs.get('labels')
         logger.debug(f"Predicted {generated_ids.shape}, Labels: {labels.shape}")
         return (None, generated_ids, labels)
-

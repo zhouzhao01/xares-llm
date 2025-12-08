@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import logging
 from loguru import logger
 import torch
 from importlib import import_module
@@ -52,6 +51,8 @@ def attr_from_py_path(path: str, endswith: str | None = None) -> type:
 
 def seed_everything(seed: int = 42, deterministic: bool = True) -> int:
     logger.debug(f"Setting global seed to {seed}...")
+    import os
+    os.environ['PYTHONHASHSEED'] = str(seed)
 
     random.seed(seed)
     np.random.seed(seed)

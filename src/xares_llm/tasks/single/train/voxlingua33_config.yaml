@@ -1,3 +1,4 @@
+max_steps: 30000
 train_data:
   VoxLingua33:
     prompt: Classify the language.

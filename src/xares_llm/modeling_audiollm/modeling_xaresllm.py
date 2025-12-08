@@ -35,9 +35,11 @@ class XaresLLMModel(PreTrainedModel, nn.Module):
         else:
             audio_encoder = attr_from_module(self.config.audio_encoder_name)(**self.config.audio_encoder_params)
         try:
-            device_type = list(audio_encoder.parameters())[0].device.type
-            if device_type != 'meta': # When using .from_pretrained, device is meta
-                check_audio_encoder(audio_encoder)
+            audio_encoder_parameters = list(audio_encoder.parameters())
+            if len(audio_encoder_parameters) > 0:
+                device_type = audio_encoder_parameters[0].device.type
+                if device_type != 'meta': # When using .from_pretrained, device is meta
+                    check_audio_encoder(audio_encoder)
         except Exception as e:
             logger.exception(e)
             return  # Error is raised inside
