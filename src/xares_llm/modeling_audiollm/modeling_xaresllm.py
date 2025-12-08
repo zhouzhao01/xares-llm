@@ -19,9 +19,10 @@ from loguru import logger
 from transformers import AutoModelForCausalLM, PreTrainedModel
 from peft import get_peft_model, LoraConfig, TaskType
 
-from xares_llm.utils import attr_from_module, attr_from_py_path
 from xares_llm.audio_encoder_checker import check_audio_encoder
 from xares_llm.modeling_audiollm.configuration_xaresllm import XaresLLMModelConfig
+from xares_llm.utils import attr_from_module, attr_from_py_path
+
 
 class XaresLLMModel(PreTrainedModel, nn.Module):
     config_class = XaresLLMModelConfig
@@ -34,7 +35,9 @@ class XaresLLMModel(PreTrainedModel, nn.Module):
         else:
             audio_encoder = attr_from_module(self.config.audio_encoder_name)(**self.config.audio_encoder_params)
         try:
-            check_audio_encoder(audio_encoder)
+            device_type = list(audio_encoder.parameters())[0].device.type
+            if device_type != 'meta': # When using .from_pretrained, device is meta
+                check_audio_encoder(audio_encoder)
         except Exception as e:
             logger.exception(e)
             return  # Error is raised inside
@@ -65,12 +68,17 @@ class XaresLLMModel(PreTrainedModel, nn.Module):
     def device(self):
         return next(self.parameters()).device
 
-    def _prepare_multimodal_inputs(self, audio, audio_attention_mask, input_ids, attention_mask, labels):
-        device = audio.device 
+    def _prepare_multimodal_inputs(self, audio, audio_attention_mask, input_ids, attention_mask, labels = None):
+        audio = audio.to(self.device)
+        audio_attention_mask = audio_attention_mask.to(self.device)
+        input_ids = input_ids.to(self.device)
+        attention_mask = attention_mask.to(self.device)
+        if labels is not None:
+            labels = labels.to(self.device)
         mel_attention_mask = None
         with torch.no_grad():
             audio_feature, mel_attention_mask = self.audio_encoder(audio, audio_attention_mask)
-            audio_feature = audio_feature.to(device)  # returned tensor might be on cpu
+            audio_feature = audio_feature.to(self.device)  # returned tensor might be on cpu
         audio_feature = self.audio_projector(audio_feature)
         if mel_attention_mask is None:
             mel_attention_mask = torch.ones(*audio_feature.shape[:2], device=attention_mask.device)
@@ -82,7 +90,10 @@ class XaresLLMModel(PreTrainedModel, nn.Module):
         zero_audio_targets = torch.full(
             audio_feature.shape[:2], device=audio_feature.device, dtype=torch.int, fill_value=-100
         )
-        labels = torch.cat((zero_audio_targets, labels), dim=1)
+        if labels is not None:
+            labels = torch.cat((zero_audio_targets, labels), dim=1)
+        else:
+            labels = None
         attention_mask = torch.cat((mel_attention_mask, attention_mask),
             dim=1,
         )
@@ -95,6 +106,6 @@ class XaresLLMModel(PreTrainedModel, nn.Module):
 
 
     @torch.no_grad()
-    def generate(self, audio, audio_attention_mask, input_ids, attention_mask, labels, **gen_kwargs):
-        input_embeds, attention_mask, labels = self._prepare_multimodal_inputs(audio, audio_attention_mask,input_ids, attention_mask, labels)
-        return self.decoder.generate(input_ids=None, inputs_embeds=input_embeds, labels=labels, attention_mask=attention_mask, **gen_kwargs)
+    def generate(self, audio, audio_attention_mask, input_ids, attention_mask, **gen_kwargs):
+        input_embeds, attention_mask, _ = self._prepare_multimodal_inputs(audio, audio_attention_mask,input_ids, attention_mask, labels=None)
+        return self.decoder.generate(input_ids=None, inputs_embeds=input_embeds, attention_mask=attention_mask, **gen_kwargs)

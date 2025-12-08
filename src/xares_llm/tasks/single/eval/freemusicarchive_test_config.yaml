@@ -5,6 +5,6 @@ eval_freemusicarchive:
     key: text;caption;captions;label;labels
     prompt: Classify the music genre (FMA).
     repo_id: mispeech/xares_llm_data
-  batch_size: 4
+  batch_size: 8
   num_workers: 0
   metric: Accuracy

@@ -5,6 +5,6 @@ eval_libricount:
     key: num_speakers
     prompt: Count the amount of speakers.
     repo_id: mispeech/xares_llm_data
-  batch_size: 4
+  batch_size: 32
   num_workers: 0
   metric: Accuracy

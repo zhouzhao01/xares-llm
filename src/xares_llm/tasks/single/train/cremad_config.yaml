@@ -1,3 +1,4 @@
+max_steps: 1000
 train_data:
   CremaD:
     prompt: Identify the emotion expressed in the speech.

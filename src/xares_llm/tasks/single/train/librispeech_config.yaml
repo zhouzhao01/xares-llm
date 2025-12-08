@@ -1,3 +1,4 @@
+max_steps: 50000
 train_data:
   LibriSpeech:
     prompt: Transcribe the English speech into text

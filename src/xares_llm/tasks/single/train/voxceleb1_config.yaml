@@ -1,3 +1,4 @@
+max_steps: 5000
 train_data:
   VoxCeleb1:
     prompt: Are the two speakers the same or different?

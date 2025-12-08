@@ -1,3 +1,4 @@
+max_steps: 100000
 train_data:
     ESC-50:
         prompt: Classify the environmental sound.

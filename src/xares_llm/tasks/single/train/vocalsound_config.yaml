@@ -1,3 +1,4 @@
+max_steps: 2000
 train_data:
   VocalSound:
     prompt: Classify the vocal sound.

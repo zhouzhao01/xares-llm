@@ -20,6 +20,7 @@ from __future__ import annotations
 import torch
 from pathlib import Path
 from transformers import AutoTokenizer, TrainingArguments
+import pandas as pd
 import yaml
 from dataclasses import dataclass, field, asdict
 from loguru import logger
@@ -29,7 +30,7 @@ from xares_llm.utils import seed_everything, setup_global_logger
 from xares_llm.audiowebdataset import AudioTextDataType, AudioTextTokenWebdataset
 from xares_llm.trainer import XaresLLMTrainerEvaluator
 from xares_llm.modeling_audiollm import XaresLLMModel, XaresLLMModelConfig
-from xares_llm.metrics import get_metric, RegisteredMetricsLiteral
+from xares_llm.metrics import get_metric, RegisteredMetricsLiteral, TokenDecoder
 import importlib
 import pprint
 
@@ -56,7 +57,6 @@ class XaresLLMTrainConfig:
     # General
     torch_num_threads: int = 1  # Do not use too many otherwise slows down
     seed: int = 42  # manual seed for all experiments
-    eval_weight: int = 0
 
     train_data: List[AudioTextDataType] | None = None
 
@@ -67,11 +67,11 @@ class XaresLLMTrainConfig:
     seed: int = field(default=42)
     crop_audio_length: float = 30  # Cropping all audio to at most 30s
     save_total_limit: int | None = field(default=4)
-    save_steps: float = field(default=1000)  # TrainingArguments is float ....
-    warmup_steps: int = field(default=1000)
+    save_steps: float = field(default=200)  # TrainingArguments is float ....
+    warmup_steps: int = field(default=200)
     max_steps: int = field(
-        default=200000,
-        metadata={"help": "Total number of training steps to perform (default: 200k)."},
+        default=10000,
+        metadata={"help": "Total number of training steps to perform (default: 10k)."},
     )
     per_device_train_batch_size: int = field(
         default=4, metadata={"help": "Batch size per device during training (default: 4)."}
@@ -137,7 +137,7 @@ class XaresLLMEvaluationConfig:
     data: AudioTextDataType
     metric: RegisteredMetricsLiteral
     metric_args: Dict[str, Any] = field(default_factory=lambda: dict())
-    batch_size: int = 1
+    batch_size: int = 32
     num_workers: int = 0
     weight: float = 1
 
@@ -176,7 +176,7 @@ class XaresLLMTask:
     def __init__(self, train_config: XaresLLMTrainConfig):
         self.train_config = train_config
         if Path(self.train_config.audio_encoder_module_path).is_file():
-            model_name = self.train_config.audio_encoder_module_path.split('/')[-1]
+            model_name = str(Path(self.train_config.audio_encoder_module_path).stem)
         else:
             model_name = self.train_config.audio_encoder_module_path.split('.')[-1]
         self.output_dir = Path(train_config.output_dir) / train_config.config_name / model_name 
@@ -195,6 +195,7 @@ class XaresLLMTask:
             per_device_train_batch_size=self.train_config.per_device_train_batch_size,
             save_total_limit=self.train_config.save_total_limit,
             save_steps=self.train_config.save_steps,
+            lr_scheduler_type='cosine',
             warmup_steps=self.train_config.warmup_steps,
             max_grad_norm=self.train_config.max_grad_norm,
             max_steps=self.train_config.max_steps,
@@ -221,10 +222,11 @@ class XaresLLMTask:
         model = self.train_mlp()
         for eval_config in eval_configs:
             dataset_name = eval_config.data.name
-            score = self.evaluate_mlp(trained_model=model, eval_config=eval_config)
-
+            score, output_df = self.evaluate_mlp(trained_model=model, eval_config=eval_config)
             logger.info(f"{dataset_name}: [{eval_config.metric}]: {score:.2f}")
             result.append({"Task": dataset_name, "score": score, "weight": eval_config.weight})
+            output_df.to_csv(self.output_dir / f'predictions_{dataset_name}.csv', index=False)
+            logger.debug(f"Model outputs can be seen in {self.output_dir / f'predictions_{dataset_name}.csv'}" )
         return result
 
     def train_mlp(self) -> XaresLLMModel:
@@ -248,12 +250,12 @@ class XaresLLMTask:
         eval_config: XaresLLMEvaluationConfig,
         trained_model: XaresLLMModel | None = None,
         chpt_path: str | Path | None = None,
-    ) -> Dict[RegisteredMetricsLiteral, float]:
+    ) -> tuple[Dict[RegisteredMetricsLiteral, float], pd.DataFrame]:
         if trained_model is not None:
             model = trained_model
         elif chpt_path is not None:
             logger.info(f"Loaded model parameters from {chpt_path}")
-            model = XaresLLMModel.from_pretrained(chpt_path, audio_encoder=self.audio_encoder)
+            model = XaresLLMModel.from_pretrained(chpt_path)
         else:
             model = self.trainer.model
 
@@ -270,9 +272,15 @@ class XaresLLMTask:
             num_workers=eval_config.num_workers,
         )
         # remove LoRA to speed up inference
-        self.trainer.model.merge_and_unload()
         self.trainer.compute_metrics = metrics_compute_function
-        return self.trainer.evaluate(eval_dataset = data_object_eval)
+
+        result = self.trainer.predict(test_dataset = data_object_eval)
+
+        decoder = TokenDecoder(self.tokenizer)
+        prediced_text, targets = decoder.decode_predictions(result)
+
+        prediction_df = pd.DataFrame({'predict':prediced_text, 'labels':targets})
+        return result.metrics[f'test_{eval_config.metric}'], prediction_df
 
     def run(self, eval_configs: List[XaresLLMEvaluationConfig]):
         scores = self.run_mlp(eval_configs=eval_configs)

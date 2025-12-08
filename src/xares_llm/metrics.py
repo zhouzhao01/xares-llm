@@ -88,7 +88,6 @@ class TokenDecoder:
 
         decoded_preds = [pred.strip() for pred in decoded_preds]
         decoded_labels = [label.strip() for label in decoded_labels]
-        print(f"{decoded_preds=} {decoded_labels=}")
         return decoded_preds, decoded_labels
 
 

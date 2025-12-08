@@ -46,17 +46,17 @@ def main(args):
     df = pd.DataFrame(scores)
     df.sort_values(by="Task", inplace=True)
 
-    df["weighted_scores"] = df["score"] * df["weight"]
     new_row = pd.DataFrame(
-        {
+        [{
             "Task": "Overall",
             "score": (df["score"] * df["weight"]).sum() / df["weight"].sum(),
             "weight": df["weight"].sum(),
-        }
+        }]
     )
     df = pd.concat((df, new_row), ignore_index=True)
     logger.info(f"\nResults:\n{df.to_string(index=False)}")
-    df.to_csv(Path(args.train_config.output_dir) / "scores.tsv", sep="\t", index=False)
+    df.to_csv(Path(runner.output_dir) / "scores.tsv", sep="\t", index=False)
+    logger.info(f"\nFile saved: {Path(runner.output_dir) / 'scores.tsv'}")
 
 
 if __name__ == "__main__":

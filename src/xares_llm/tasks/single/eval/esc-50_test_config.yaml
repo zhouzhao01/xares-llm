@@ -5,6 +5,6 @@ eval_esc-50:
     key: text;caption;captions;label;labels
     prompt: Classify the environmental sound.
     repo_id: mispeech/xares_llm_data
-  batch_size: 4
+  batch_size: 128
   num_workers: 0
   metric: Accuracy

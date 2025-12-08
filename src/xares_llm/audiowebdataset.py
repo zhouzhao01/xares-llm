@@ -285,12 +285,12 @@ def _process_sample_stream(
     target_sample_rate: int = 16000,
     mono: bool = True,
     prompt: str | List[str] | Dict[str, Any] = "",
+    append_targets_to_input: bool = True, # During training yes, inference no
     handler: Callable = warn_and_continue,
     tokenizer_eos_token: bool = False,
 ) -> Iterable[Dict[str, Any]]:
     for data_sample in stream:
         # Note: We use the local variables from the outer scope directly.
-        # try:
         # 1. Pop and Extract Data
         audio = data_sample.pop("audio")
         tarname = data_sample.pop("tar")
@@ -327,6 +327,10 @@ def _process_sample_stream(
                 sample_prompt = random.choice(sample_prompt)
             prompt_inputs = tokenizer(sample_prompt)
 
+            input_ids = prompt_inputs['input_ids']
+            attention_mask = prompt_inputs['attention_mask']
+            labels = [-100 for _ in prompt_inputs["input_ids"]] # Default no loss for prompt
+
             if tokenizer_eos_token:
                 text = text + tokenizer.eos_token
             text_inputs = tokenizer(text)  # Textinputs is a List[int]
@@ -337,15 +341,16 @@ def _process_sample_stream(
                 )
                 continue
 
-            labels = text_inputs["input_ids"]
+            target_labels = text_inputs["input_ids"]
 
             # prompt_inputs is List[int]
-            prompt_targets = [-100 for _ in prompt_inputs["input_ids"]]
-            labels = prompt_targets + labels
-            input_ids = prompt_inputs["input_ids"] + text_inputs["input_ids"]
-            attention_mask = prompt_inputs["attention_mask"] + text_inputs["attention_mask"]
+            labels = labels + target_labels
+            # During training, append inputs for predicting
+            if append_targets_to_input:
+                input_ids = input_ids + text_inputs["input_ids"]
+                attention_mask = attention_mask + text_inputs["attention_mask"]
 
-            assert len(labels) == len(input_ids) == len(attention_mask)
+                assert len(labels) == len(input_ids) == len(attention_mask)
 
             yield {
                 "audio": audio,
@@ -355,11 +360,6 @@ def _process_sample_stream(
                 "text": text,
                 "filename": filename,
             }
-    # except Exception as exn:
-    #     if handler(exn):
-    #         continue
-    #     else:
-    #         break
 
 
 def url_to_name(url):
@@ -424,7 +424,7 @@ def create_audio_text_token_pipeline(
     tokenizer_eos_token = tokenizer.eos_token if (hasattr(tokenizer, "eos_token") and training) else None # Dont need to estimate EOS token during inference
     pipeline.append(
         partial(
-            _process_sample_stream, tokenizer=tokenizer, tokenizer_eos_token=tokenizer_eos_token, **filtering_kwargs
+            _process_sample_stream, tokenizer=tokenizer, tokenizer_eos_token=tokenizer_eos_token, append_targets_to_input=training, **filtering_kwargs
         )
     )
     # Batching

@@ -43,12 +43,12 @@ class XaresLLMTrainerEvaluator(Trainer):
     def get_train_dataloader(self):
         return self.train_data_object.create_dataloader()
 
-    def get_eval_dataloader(self, eval_dataset: AudioTextTokenWebdataset, *args, **kwargs):
+    def get_test_dataloader(self, eval_dataset: AudioTextTokenWebdataset, *args, **kwargs):
         return eval_dataset.create_dataloader()
 
     def prediction_step(self, model, inputs, prediction_loss_only, ignore_keys=None):
-        generated_ids = model.generate(**inputs, repetition_penalty=1.05, max_length=256)
-        print(f"{generated_ids=}")
+        generated_ids = model.generate(**inputs, repetition_penalty=1.05, max_new_tokens=150)
         labels = inputs.get('labels')
+        logger.debug(f"Predicted {generated_ids.shape}, Labels: {labels.shape}")
         return (None, generated_ids, labels)
 

@@ -5,6 +5,6 @@ eval_gtzan:
     key: genre
     prompt: Classify the music genre (GTZAN).
     repo_id: mispeech/xares_llm_data
-  batch_size: 4
+  batch_size: 16
   num_workers: 0
   metric: Accuracy

@@ -5,6 +5,6 @@ eval_urbansound8k:
     key: soundevent
     prompt: Classify the urban sound.
     repo_id: mispeech/xares_llm_data
-  batch_size: 4
+  batch_size: 32
   num_workers: 0
   metric: Accuracy

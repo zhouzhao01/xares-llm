@@ -5,7 +5,7 @@ eval_fsdkaggle2018:
     key: label;labels
     prompt: Multi-label classification for FSDKaggle2018
     repo_id: mispeech/xares_llm_data
-  batch_size: 4
+  batch_size: 16
   num_workers: 0
   metric: mAP
   metric_args:

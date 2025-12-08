@@ -25,6 +25,7 @@ class EncoderValidationError(Exception):
 
 
 def check_audio_encoder(encoder):
+    device = list(encoder.parameters())[0].device
     if not isinstance(encoder, torch.nn.Module):
         raise EncoderValidationError(f"Expected torch.nn.Module for encoder, got {type(encoder)}")
 
@@ -34,7 +35,7 @@ def check_audio_encoder(encoder):
     if not check_supports_two_args(encoder.forward):
         raise EncoderValidationError("Encoder forward needs to accept two arguments: (audio, attention_mask)")
 
-    sample_audio = torch.randn(3, 50000)
+    sample_audio = torch.randn(3, 50000, device=device)
     try:
         result = encoder(sample_audio, None)
         is_sequence = isinstance(result, Sequence) and not isinstance(result, (str, bytes))

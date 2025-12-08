@@ -1,3 +1,4 @@
+max_steps: 20000
 train_data:
   NSynth:
     prompt: Classify the music instrument.
