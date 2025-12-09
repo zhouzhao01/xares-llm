@@ -28,6 +28,7 @@ authors = [
   {name = "Heinrich Dinkel", email = "dinkelheinrich@xiaomi.com"},
   {name = "Yadong Niu", email = "niuyadong@xiaomi.com"},
   {name = "Jiahao Zhou", email = "zhoujiahao5@xiaomi.com"},
+  {name = "Xiyang Li", email = "lixiyang@xiaomi.com"},
 ]
 readme = "README.md"
 requires-python = ">=3.10"
@@ -47,6 +48,10 @@ where = ["src"]
 xares_llm = [
   "tasks/all/eval/*yaml",
   "tasks/all/train/*yaml",
+  "tasks/task1/eval/*yaml",
+  "tasks/task1/train/*yaml",
+  "tasks/task2/eval/*yaml",
+  "tasks/task2/train/*yaml",
   "tasks/single/eval/*.yaml",
   "tasks/single/train/*.yaml",
 ]
