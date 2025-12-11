@@ -82,6 +82,8 @@ class TokenDecoder:
         label_ids = pred.label_ids
         if isinstance(predictions, np.ndarray) and len(predictions.shape) > 2:
             predictions = np.argmax(predictions, axis=-1)
+        assert isinstance(predictions, np.ndarray)
+        assert isinstance(label_ids, np.ndarray)
         label_ids[label_ids == -100] = self.tokenizer.pad_token_id
         predictions[predictions == -100] = self.tokenizer.pad_token_id
         decoded_preds = self.tokenizer.batch_decode(predictions, skip_special_tokens=True)
@@ -152,18 +154,49 @@ class mAP:
 class FENSE:
     def __init__(self, tokenizer, **kwargs):
         self.tokendecoder = TokenDecoder(tokenizer)
-        self.separator = separator
+        from mecat import evaluate
+        self.evaluate_function = lambda preds, targets: evaluate(
+                predicted_data=preds, 
+                reference_data=targets, 
+                task='caption',
+                metrics='fense',
+                subtask='long',
+                )
         super().__init__(**kwargs)
 
     def __call__(self, pred: EvalPrediction):
         preds, targets = self.tokendecoder.decode_predictions(pred)
-        preds = list(map(preprocess_string, preds))
-        targets = list(map(preprocess_string, targets))
+        preds = [[s] for s in map(preprocess_string, preds)]
+        targets = [[s] for s in map(preprocess_string, targets)]
+        score_df = self.evaluate_function(preds, targets)
+        score = score_df[score_df['subtask'] == 'score_caption']['fense'].iloc[0]
         return {
-            "mAP": average_precision_score_with_string(
-                targets, preds, num_classes=self.num_classes, separator=self.separator
-            )
-        }  # scikit supports strings
+            "FENSE": float(score)
+            }
+
+@MetricRegistry.register
+class DATE:
+    def __init__(self, tokenizer, **kwargs):
+        self.tokendecoder = TokenDecoder(tokenizer)
+        from mecat import evaluate
+        self.evaluate_function = lambda preds, targets: evaluate(
+                predicted_data=preds, 
+                reference_data=targets, 
+                task='caption',
+                metrics='date',
+                subtask='long',
+                )
+        super().__init__(**kwargs)
+
+    def __call__(self, pred: EvalPrediction):
+        preds, targets = self.tokendecoder.decode_predictions(pred)
+        preds = [[s] for s in map(preprocess_string, preds)]
+        targets = [[s] for s in map(preprocess_string, targets)]
+        score_df = self.evaluate_function(preds, targets)
+        score = score_df[score_df['subtask'] == 'score_caption']['date'].iloc[0]
+        return {
+            "DATE": float(score)
+        }  
 
 
 RegisteredMetricsLiteral = MetricRegistry.get_registered_names()

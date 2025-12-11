@@ -180,14 +180,8 @@ class XaresLLMEvaluationConfig:
         evaluation_configs = []
         # Yaml config should have data-name as key (config_name)
         for k, values in yaml_config.items():
-            try:
-                data_kwargs = values.pop("data")
-                metric = values.pop("metric")
-            except KeyError as e:
-                logger.exception(
-                    f"data and metric are required keys! Check config {yaml_config_file}\nMissing key: {e}"
-                )
-                raise KeyError(e)
+            data_kwargs = values.pop("data")
+            metric = values.pop("metric")
             evaluation_configs.append(cls(data=AudioTextDataType(name=k, **data_kwargs), metric=metric, **values))
         return evaluation_configs
 
@@ -307,8 +301,9 @@ class XaresLLMTask:
             sort_by_length=256,  # just to speed up a bit
             num_workers=eval_config.num_workers,
         )
-        # remove LoRA to speed up inference
         self.trainer.compute_metrics = metrics_compute_function
+
+        logger.info("Starting evaluation")
 
         result = self.trainer.predict(test_dataset=data_object_eval)
 

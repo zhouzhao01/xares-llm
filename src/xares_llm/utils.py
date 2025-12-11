@@ -68,11 +68,20 @@ def seed_everything(seed: int = 42, deterministic: bool = True) -> int:
             torch.backends.cudnn.benchmark = False
     return seed
 
+def loguru_excepthook(exc_type, exc_value, exc_traceback):
+    if issubclass(exc_type, KeyboardInterrupt):
+        sys.__excepthook__(exc_type, exc_value, exc_traceback)
+        return
+    logger.opt(exception=(exc_type, exc_value, exc_traceback)).error(
+        f"Uncaught exception: {exc_value}"
+    )
 
 def setup_global_logger():
+    #pprint errors
+    sys.excepthook = loguru_excepthook
     from webdataset.utils import pytorch_worker_info
     rank, world_size, *_ = pytorch_worker_info()
-    logger.remove(0)
+    logger.remove()
     if rank == 0:
         # Make the logger with this format the default for all loggers in this package
         logger.configure(
@@ -90,3 +99,4 @@ def setup_global_logger():
         logger.level("INFO", color="<white>")
     else:
         logger.disable(__name__)
+

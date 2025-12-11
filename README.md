@@ -34,7 +34,7 @@ python3 -m xares_llm.run example.dummy.dummyencoder.DummyEncoder
 python3 -m xares_llm.run example/dummy/dummyencoder.py task1 task1
 ```
 
-### Task 2 ( Generation )
+### Task 2 ( Understanding )
 
 ```bash
 python3 -m xares_llm.run example/dummy/dummyencoder.py task2 task2
@@ -132,13 +132,11 @@ hf download mispeech/MECAT-Caption --local-dir xares_data --repo-type dataset
 ### Provided script
 
 ```python
-python3 -m xares_llm.download_data --data all
-# python3 -m xares_llm.download_data --data task1
-# python3 -m xares_llm.download_data --data task2
+python3 -m xares_llm.download_data
 ```
 
 The download location can also be changed:
 ```python
-# python3 -m xares_llm.download_data --data task1 --cache_dir /tmp/mycache
+# XARES_DATA_HOME="NEW_LOCATION" python3 -m xares_llm.download_data
 ```
 

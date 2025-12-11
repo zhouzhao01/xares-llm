@@ -32,6 +32,7 @@ from xares_llm.task import (
 
 
 def main(args):
+    #Training
     train_config = XaresLLMTrainConfig.from_file_or_key(
         args.train_config, encoder_path=args.encoder_path, model_kwargs=args.model_args, overwrite_kwargs=args.args
     )
@@ -57,8 +58,8 @@ def main(args):
         ]
     )
     df = pd.concat((df, new_row), ignore_index=True)
-    logger.info(f"\nResults:\n{df.to_string(index=False)}")
-    df.to_csv(Path(runner.output_dir) / "scores.tsv", sep="\t", index=False)
+    logger.info(f"\nResults:\n{df.to_string(index=False, float_format='%.3f')}")
+    df.to_csv(Path(runner.output_dir) / "scores.tsv", sep="\t", index=False, float_format='%.3f')
     logger.info(f"\nFile saved: {Path(runner.output_dir) / 'scores.tsv'}")
 
 

@@ -70,7 +70,11 @@ class XaresLLMModel(PreTrainedModel, nn.Module):
 
     @property
     def device(self):
-        return next(self.parameters()).device
+        try:
+            return next(self.parameters()).device
+        except StopIteration as e:
+            logger.error("Rerun the script with 'accelerate launch -m xares_llm.run'")
+            raise e
 
     def _prepare_multimodal_inputs(self, audio, audio_attention_mask, input_ids, attention_mask, labels=None):
         audio = audio.to(self.device)
