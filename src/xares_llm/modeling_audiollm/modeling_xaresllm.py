@@ -83,13 +83,13 @@ class XaresLLMModel(PreTrainedModel, nn.Module):
         attention_mask = attention_mask.to(self.device)
         if labels is not None:
             labels = labels.to(self.device)
-        mel_attention_mask = None
+        final_audio_attention_mask = None
         with torch.no_grad():
-            audio_feature, mel_attention_mask = self.audio_encoder(audio, audio_attention_mask)
+            audio_feature, final_audio_attention_mask = self.audio_encoder(audio, audio_attention_mask)
             audio_feature = audio_feature.to(self.device)  # returned tensor might be on cpu
         audio_feature = self.audio_projector(audio_feature)
-        if mel_attention_mask is None:
-            mel_attention_mask = torch.ones(*audio_feature.shape[:2], device=attention_mask.device)
+        if final_audio_attention_mask is None:
+            final_audio_attention_mask = torch.ones(*audio_feature.shape[:2], device=attention_mask.device)
         # An error occurs if .get_input_embeddings() is used with self.input_embeds = ...
         input_embeds = self.decoder.get_input_embeddings()(input_ids)  # Int -> Float
 
@@ -103,7 +103,7 @@ class XaresLLMModel(PreTrainedModel, nn.Module):
         else:
             labels = None
         attention_mask = torch.cat(
-            (mel_attention_mask, attention_mask),
+            (final_audio_attention_mask, attention_mask),
             dim=1,
         )
         return input_embeds, attention_mask, labels

@@ -47,7 +47,7 @@ class XaresLLMTrainerEvaluator(Trainer):
         return eval_dataset.create_dataloader()
 
     def prediction_step(self, model, inputs, prediction_loss_only, ignore_keys=None):
-        generated_ids = model.generate(**inputs, repetition_penalty=1.05, max_new_tokens=150)
+        generated_ids = model.generate(**inputs, repetition_penalty=1.05, max_new_tokens=150, do_sample=False, temperature=1.0, top_k=50, top_p=1.0)
         labels = inputs.get("labels")
         if labels is not None:
             labels = labels.to(generated_ids.device)

@@ -169,7 +169,7 @@ class FENSE:
         preds = [[s] for s in map(preprocess_string, preds)]
         targets = [[s] for s in map(preprocess_string, targets)]
         score_df = self.evaluate_function(preds, targets)
-        score = score_df[score_df['subtask'] == 'score_caption']['fense'].iloc[0]
+        score = score_df[score_df['subtask'] == 'content_long']['fense'].iloc[0]
         return {
             "FENSE": float(score)
             }
@@ -193,10 +193,10 @@ class DATE:
         preds = [[s] for s in map(preprocess_string, preds)]
         targets = [[s] for s in map(preprocess_string, targets)]
         score_df = self.evaluate_function(preds, targets)
-        score = score_df[score_df['subtask'] == 'score_caption']['date'].iloc[0]
+        score = score_df[score_df['subtask'] == 'content_long']['date'].iloc[0]
         return {
             "DATE": float(score)
-        }  
+        }
 
 
 RegisteredMetricsLiteral = MetricRegistry.get_registered_names()

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "xares-llm"
-version = "0.0.8"
+version = "0.0.9"
 description = "eXtensive Audio Representation and Evaluation Suite - Large Language Model"
 dependencies = [
   "loguru",
@@ -21,7 +21,7 @@ dependencies = [
   "torchcodec>=0.8.0",
   "accelerate>=1.10.1",
   "peft>=0.18.0",
-  "mecat>=1.0.7",
+  "mecat>=1.0.8",
 ]
 authors = [
   {name = "Heinrich Dinkel", email = "dinkelheinrich@xiaomi.com"},

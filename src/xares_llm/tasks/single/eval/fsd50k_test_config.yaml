@@ -5,8 +5,8 @@ eval_fsd50k:
     key: label;labels
     prompt: Multi-label classification for FSD50k
     repo_id: mispeech/xares_llm_data
-  batch_size: 4
-  num_workers: 0
+  batch_size: 16
+  num_workers: 2
   metric: mAP
   metric_args:
     num_classes: 41

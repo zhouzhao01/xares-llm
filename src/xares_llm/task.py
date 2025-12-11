@@ -242,6 +242,16 @@ class XaresLLMTask:
                 audio_encoder_params=self.train_config.audio_encoder_kwargs,
             ),
         )
+        self.model = None
+        # Glob for checkpoint directories (e.g., 'checkpoint-1000', 'checkpoint-2000')
+        checkpoint_dirs = sorted(
+            self.output_dir.glob("checkpoint-*"),
+            key=lambda p: p.stat().st_mtime,
+            reverse=True
+        )
+        if checkpoint_dirs:
+            logger.info(f"Found pretrained model, loading from {checkpoint_dirs[0]}")
+            self.model = XaresLLMModel.from_pretrained(checkpoint_dirs[0])
         self.trainer = XaresLLMTrainerEvaluator(model=None, model_init=model_init_function, args=training_args)
 
     def run_mlp(self, eval_configs: List[XaresLLMEvaluationConfig]) -> List[Dict[str, Any]]:
@@ -252,14 +262,28 @@ class XaresLLMTask:
         model = self.train_mlp()
         for eval_config in eval_configs:
             dataset_name = eval_config.data.name
-            score, output_df = self.evaluate_mlp(trained_model=model, eval_config=eval_config)
-            logger.info(f"{dataset_name}: [{eval_config.metric}]: {score:.2f}")
+            score_file_cache = self.output_dir / f'score_{dataset_name}.yaml'
+
+            if score_file_cache.exists():
+                with open(score_file_cache,'r') as rp:
+                    score = yaml.load(rp, Loader=yaml.SafeLoader)
+                logger.debug(f"Found cached result [{score_file_cache}] for {dataset_name}: Skipping Evaluation, Score: {score:.2f}")
+            else:
+                score, output_df = self.evaluate_mlp(trained_model=model, eval_config=eval_config)
+                logger.info(f"{dataset_name}: [{eval_config.metric}]: {score:.2f}")
+                output_df.to_csv(self.output_dir / f"predictions_{dataset_name}.csv", index=False)
+
+                with open(score_file_cache,'w') as wp:
+                    yaml.dump(result[-1], wp, default_flow_style=False)
+
             result.append({"Task": dataset_name, "score": score, "weight": eval_config.weight})
-            output_df.to_csv(self.output_dir / f"predictions_{dataset_name}.csv", index=False)
             logger.debug(f"Model outputs can be seen in {self.output_dir / f'predictions_{dataset_name}.csv'}")
         return result
 
     def train_mlp(self) -> XaresLLMModel:
+        if self.model is not None:
+            self.trainer.model = self.model
+            return self.model # Already trained
         train_data_object = AudioTextTokenWebdataset(
             data_urls=self.train_config.train_data,
             tokenizer=self.tokenizer,
