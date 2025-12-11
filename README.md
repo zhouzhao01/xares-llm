@@ -145,3 +145,9 @@ The download location can also be changed:
 
 By default the code uses `fp32` precision, which is slow but can be reproduced. Using any other precision will lead to different results.
 
+
+If one wants to speed up training use:
+```bash
+accelerate launch --mixed-precision='bf16' -m xares_llm.run task1
+
+```
