@@ -73,7 +73,7 @@ class FileCache(wds.cache.FileCache):
         dest = os.path.join(self.cache_dir, cache_name)
         if not os.path.exists(dest):
             if self.verbose:
-                print("# downloading %s to %s" % (url, dest), file=sys.stderr)
+                logger.debug("# downloading %s to %s" % (url, dest))
             if self.cleaner is not None:
                 self.cleaner.cleanup()
             wds.cache.download(url, dest, verbose=self.verbose)
@@ -596,7 +596,7 @@ class AudioTextTokenWebdataset:
 
     def _default_collate_fn(self, samples):
         # Batch : Dict[str, List[List[int]]]
-        input_ids, attention_mask, labels, audio = [], [], [], []
+        input_ids, attention_mask, labels, audio= [], [], [], []
         for item in samples:
             input_ids.append(item["input_ids"])
             attention_mask.append(item["attention_mask"])
@@ -614,9 +614,6 @@ class AudioTextTokenWebdataset:
             "audio": padded_audio,
             "audio_attention_mask": audio_attention_mask,
         }
-
-        padded_batch["audio_attention_mask"] = audio_attention_mask
-        padded_batch["audio"] = padded_audio
         return padded_batch
 
 

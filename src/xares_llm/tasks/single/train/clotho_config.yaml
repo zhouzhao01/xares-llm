@@ -1,4 +1,4 @@
-max_steps: 20000
+max_steps: 5000
 train_data:
   Clotho:
     prompt: Generate a short caption for the audio.

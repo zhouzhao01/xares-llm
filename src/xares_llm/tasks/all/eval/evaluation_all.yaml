@@ -21,7 +21,7 @@ eval_asvspoof2015:
 eval_clotho:
   data:
     data:
-    - Clotho/test/test_00000{00..04}.tar.gz
+    - Clotho/test/test_0000{00..04}.tar.gz
     key: caption;captions
     prompt: Generate a short caption for the audio.
     repo_id: mispeech/xares_llm_data
@@ -135,12 +135,12 @@ eval_mecat:
     - MECAT-Caption/SM0/test_0000-0000000.tar.gz
     - MECAT-Caption/SM0/test_0001-0000000.tar.gz
     - MECAT-Caption/00A/test_0000-0000000.tar.gz
-    key: short
+    key: long
     prompt: Write a general audiocaption.
     repo_id: mispeech/xares_llm_data
   batch_size: 4
   num_workers: 4
-  metric: FENSE
+  metric: DATE
 eval_nsynth:
   data:
     data:

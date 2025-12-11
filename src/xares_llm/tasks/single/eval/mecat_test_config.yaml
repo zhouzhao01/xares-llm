@@ -11,9 +11,9 @@ eval_mecat:
     - MECAT-Caption/SM0/test_0000-0000000.tar.gz
     - MECAT-Caption/SM0/test_0001-0000000.tar.gz
     - MECAT-Caption/00A/test_0000-0000000.tar.gz
-    key: short
+    key: long
     prompt: Write a general audiocaption.
     repo_id: mispeech/xares_llm_data
   batch_size: 4
   num_workers: 0
-  metric: FENSE
+  metric: DATE
