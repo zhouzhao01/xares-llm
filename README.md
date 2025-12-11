@@ -140,3 +140,8 @@ The download location can also be changed:
 # XARES_DATA_HOME="NEW_LOCATION" python3 -m xares_llm.download_data
 ```
 
+
+## Note on Precision
+
+By default the code uses `fp32` precision, which is slow but can be reproduced. Using any other precision will lead to different results.
+

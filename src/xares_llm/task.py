@@ -71,7 +71,7 @@ class XaresLLMTrainConfig:
     # Dataloader/dataset arguments
     seed: int = field(default=42)
     crop_audio_length: float = 30  # Cropping all audio to at most 30s
-    save_total_limit: int | None = field(default=4)
+    save_total_limit: int | None = field(default=1)
     save_steps: float = field(default=200)  # TrainingArguments is float ....
     warmup_steps: int = field(default=200)
     max_steps: int = field(
@@ -87,9 +87,6 @@ class XaresLLMTrainConfig:
     learning_rate: float = field(default=1e-4)
     weight_decay: float = field(default=0.01)
     seed: int = field(default=42)
-    torch_compile: bool = field(default=False)
-    bf16: bool = False  # Will be set automatically
-    fp16: bool = False  # Will be set automatically
     max_grad_norm: float = field(default=1.0)
     logging_dir: str = "log"
     logging_steps: int = 100
@@ -97,23 +94,11 @@ class XaresLLMTrainConfig:
     sort_by_length: int = 128  # Sort 128 samples by length
 
     def __post_init__(self):
-        # torch.cuda.is_bf16_supported() does return True on V100, support is there ... but no speedup
-        if torch.cuda.is_available():
-            has_bf16support = torch.cuda.get_device_capability(torch.device("cuda"))[0] > 7
-            if has_bf16support:
-                self.bf16 = True
-                self.fp16 = False
-            else:
-                self.fp16 = True
-                self.bf16 = False
-
         if isinstance(self.train_data, dict):
             self.train_data = [AudioTextDataType(name=k, **val) for k, val in self.train_data.items()]
         torch.set_num_threads(self.torch_num_threads)
-
         setup_global_logger()
         seed_everything(self.seed)
-        logger.info(f"Mixed precision training: BF16={self.bf16} FP16={self.fp16}")
 
     def __repr__(self):
         return pprint.pformat(asdict(self))
@@ -221,7 +206,6 @@ class XaresLLMTask:
             per_device_train_batch_size=self.train_config.per_device_train_batch_size,
             save_total_limit=self.train_config.save_total_limit,
             save_steps=self.train_config.save_steps,
-            lr_scheduler_type="cosine",
             warmup_steps=self.train_config.warmup_steps,
             max_grad_norm=self.train_config.max_grad_norm,
             max_steps=self.train_config.max_steps,
@@ -229,9 +213,6 @@ class XaresLLMTask:
             weight_decay=self.train_config.weight_decay,
             seed=self.train_config.seed,
             logging_steps=self.train_config.logging_steps,
-            torch_compile=self.train_config.torch_compile,
-            bf16=self.train_config.bf16,
-            fp16=self.train_config.fp16,
             logging_dir=Path(self.output_dir) / self.train_config.logging_dir,
         )
         # Lazy init, during .train() or .eval()
@@ -264,9 +245,9 @@ class XaresLLMTask:
             dataset_name = eval_config.data.name
             score_file_cache = self.output_dir / f'score_{dataset_name}.yaml'
 
-            if score_file_cache.exists():
+            if score_file_cache.exists() and score_file_cache.stat().st_size > 0:
                 with open(score_file_cache,'r') as rp:
-                    score = yaml.load(rp, Loader=yaml.SafeLoader)
+                    score = yaml.load(rp, Loader=yaml.SafeLoader)['score']
                 logger.debug(f"Found cached result [{score_file_cache}] for {dataset_name}: Skipping Evaluation, Score: {score:.2f}")
             else:
                 score, output_df = self.evaluate_mlp(trained_model=model, eval_config=eval_config)
@@ -274,7 +255,7 @@ class XaresLLMTask:
                 output_df.to_csv(self.output_dir / f"predictions_{dataset_name}.csv", index=False)
 
                 with open(score_file_cache,'w') as wp:
-                    yaml.dump(result[-1], wp, default_flow_style=False)
+                    yaml.dump({'score':score}, wp, default_flow_style=False)
 
             result.append({"Task": dataset_name, "score": score, "weight": eval_config.weight})
             logger.debug(f"Model outputs can be seen in {self.output_dir / f'predictions_{dataset_name}.csv'}")

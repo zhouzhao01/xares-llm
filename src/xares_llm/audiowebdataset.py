@@ -123,6 +123,12 @@ def resolve_url(file_path: str, repo_id: str | None = None, repo_type_url_segmen
     download_url = f"{base_url}?download=true"
     return download_url
 
+def seed_worker(worker_id):
+    base_seed = 42
+    worker_seed = base_seed + worker_id
+    random.seed(worker_seed)
+    np.random.seed(worker_seed)
+    torch.manual_seed(worker_seed)
 
 def _is_corrupted_text(text: str) -> bool:
     """
@@ -443,15 +449,15 @@ def create_audio_text_token_pipeline(
 ) -> wds.DataPipeline:
     pipeline: List = []
     if resample:
-        pipeline.append(wds.ResampledShards(urls))
+        pipeline.append(wds.ResampledShards(urls, deterministic=True, seed=42))
     else:
-        pipeline.append(wds.SimpleShardList(urls))
+        pipeline.append(wds.SimpleShardList(urls, seed=42))
     # Important note: wds.tarfile_to_samples does not work for streaming
     # For streaming, one needs tar_file_expander + group_by_keys
     if training:
         pipeline.extend(
             [
-                wds.detshuffle(),
+                wds.detshuffle(seed=42),
                 wds.split_by_node,
                 wds.split_by_worker,
                 FileCache(cache_dir=cache_dir, url_to_name=url_to_name),
@@ -575,9 +581,10 @@ class AudioTextTokenWebdataset:
             pin_memory=True,
             num_workers=self.num_workers,
             persistent_workers=(self.num_workers > 0) and self.training,
+            worker_init_fn=seed_worker,
         ).unbatched()
         if self.training:
-            dataloader = dataloader.shuffle(self.shuffle)
+            dataloader = dataloader.shuffle(self.shuffle, seed=42)
         if self.sort_by_length:
             dataloader = dataloader.compose(
                 sort_by_length(
@@ -602,6 +609,7 @@ class AudioTextTokenWebdataset:
             attention_mask.append(item["attention_mask"])
             labels.append(item["labels"])
             audio.append(item["audio"])
+
 
         padded_audio, audio_attention_mask = _pad(audio, padding_value=0.0)
         padded_batch = {
