@@ -9,4 +9,4 @@ eval_fsd50k:
   num_workers: 2
   metric: mAP
   metric_args:
-    num_classes: 41
+    num_classes: 200
