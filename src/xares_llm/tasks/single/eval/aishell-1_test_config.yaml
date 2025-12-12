@@ -5,6 +5,6 @@ eval_aishell-1:
     - AISHELL-1/test/test_000{000..011}.tar.gz
     key: text
     repo_id: mispeech/xares_llm_data
-  batch_size: 4
+  batch_size: 32
   num_workers: 0
   metric: iCER

@@ -23,7 +23,7 @@ class XaresLLMModelConfig(PretrainedConfig):
         self,
         audio_encoder_name: str | None = None,
         audio_encoder_params: Dict[str, Any] = {},
-        decoder_type: str = "Qwen/Qwen3-0.6B",
+        decoder_type: str = "HuggingFaceTB/SmolLM2-135M",
         **kwargs,
     ):
         super().__init__(**kwargs)

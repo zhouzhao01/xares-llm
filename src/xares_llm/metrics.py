@@ -23,11 +23,12 @@ import string
 import re
 
 
-def preprocess_string(text: str):
+def preprocess_string(text: str, remove_punctuation: bool = True):
     text = unicodedata.normalize("NFKC", text)  # apply NFKC
     text = text.lower()
     text = text.replace("-", " ")  # remove hyphen
-    text = text.translate(str.maketrans("", "", string.punctuation))
+    if remove_punctuation:
+        text = text.translate(str.maketrans("", "", string.punctuation))
     text = re.sub(r"\s+", " ", text).strip()
     return text
 
@@ -141,8 +142,8 @@ class mAP:
 
     def __call__(self, pred: EvalPrediction):
         preds, targets = self.tokendecoder.decode_predictions(pred)
-        preds = list(map(preprocess_string, preds))
-        targets = list(map(preprocess_string, targets))
+        preds = [preprocess_string(p, remove_punctuation=False) for p in preds]
+        targets = [preprocess_string(t, remove_punctuation=False) for t in targets]
         return {
             "mAP": average_precision_score_with_string(
                 targets, preds, num_classes=self.num_classes, separator=self.separator
