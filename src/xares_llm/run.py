@@ -38,6 +38,13 @@ def main(args):
         args.train_config, encoder_path=args.encoder_path, model_kwargs=args.model_args, overwrite_kwargs=args.args
     )
     eval_configs = XaresLLMEvaluationConfig.configs_from_file_or_key(args.eval_configs)
+    if args.benchmark:
+        logger.info("Using deterministic mode.")
+        import torch
+        os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":4096:8"
+        torch.use_deterministic_algorithms(True)
+        torch.backends.cudnn.deterministic = True
+        torch.backends.cudnn.benchmark = False
 
     logger.info(f"Training with Train config \n{train_config}\n Eval config: {eval_configs}")
     runner = XaresLLMTask(train_config)
@@ -65,7 +72,6 @@ def main(args):
 
 
 if __name__ == "__main__":
-    os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":4096:8"
     parser = argparse.ArgumentParser(description="Run XARES-LLM")
     parser.add_argument(
         "encoder_path",
@@ -97,6 +103,12 @@ if __name__ == "__main__":
         type=lambda arg: json.loads(arg),
         help="Additional training args. Format is JSON like: --args {'per_device_train_batch_size':16, 'save_steps':30}",
         default={},
+    )
+    parser.add_argument(
+        "--benchmark",
+        action='store_true',
+        help="Using deterministic mode for training/evaluation. Slows down training, but is reproducible",
+        default=True,
     )
     args = parser.parse_args()
     main(args)
