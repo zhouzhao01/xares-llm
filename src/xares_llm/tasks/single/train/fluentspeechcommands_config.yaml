@@ -1,3 +1,4 @@
+max_steps: 3000
 train_data:
   FluentSpeechCommands:
     prompt: Identify the command, action, and object from the speech.

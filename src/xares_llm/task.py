@@ -97,6 +97,9 @@ class XaresLLMTrainConfig:
         if isinstance(self.train_data, dict):
             self.train_data = [AudioTextDataType(name=k, **val) for k, val in self.train_data.items()]
         torch.set_num_threads(self.torch_num_threads)
+        torch.use_deterministic_algorithms(True)
+        torch.backends.cudnn.deterministic = True
+        torch.backends.cudnn.benchmark = False
         setup_global_logger()
         seed_everything(self.seed)
 

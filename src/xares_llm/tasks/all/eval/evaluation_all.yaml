@@ -55,7 +55,7 @@ eval_fluentspeechcommands:
     key: text;caption;captions;label;labels
     prompt: Identify the command, action, and object from the speech.
     repo_id: mispeech/xares_llm_data
-  batch_size: 4
+  batch_size: 8
   num_workers: 2
   metric: Accuracy
 eval_freemusicarchive:
@@ -65,7 +65,7 @@ eval_freemusicarchive:
     key: text;caption;captions;label;labels
     prompt: Classify the music genre (FMA).
     repo_id: mispeech/xares_llm_data
-  batch_size: 4
+  batch_size: 8
   num_workers: 2
   metric: Accuracy
 eval_fsd50k:

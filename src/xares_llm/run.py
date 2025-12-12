@@ -14,6 +14,7 @@
 
 import argparse
 import json
+import os
 from typing import Dict, Any, List
 
 import pandas as pd
@@ -64,6 +65,7 @@ def main(args):
 
 
 if __name__ == "__main__":
+    os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":4096:8"
     parser = argparse.ArgumentParser(description="Run XARES-LLM")
     parser.add_argument(
         "encoder_path",
