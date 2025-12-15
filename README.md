@@ -62,6 +62,41 @@ class DummyEncoder(torch.nn.Module):
         return output, audio_attention_mask
 ```
 
+## Baseline results
+
+### Task1
+
+| Task | Dasheng-Base Score | Whisper-Base Score | 
+| :--- | :---: | :---: |
+| `eval_asvspoof2015` | 0.937 | |
+| `eval_cremad` | 0.621 | |
+| `eval_esc-50` | 0.755 | |
+| `eval_fluentspeechcommands` | 0.984 | |
+| `eval_freemusicarchive` | 0.429 | |
+| `eval_fsd50k` | 0.063 | |
+| `eval_fsdkaggle2018` | 0.415 | |
+| `eval_gtzan` | 0.323 | |
+| `eval_libricount` | 0.386 | |
+| `eval_nsynth` | 0.675 | |
+| `eval_speechcommandsv1` | 0.655 | |
+| `eval_urbansound8k` | 0.829 | |
+| `eval_vocalsound` | 0.855 | |
+| `eval_voxceleb1` | 0.974 | |
+| `eval_voxlingua33` | 0.311 | |
+| Overall | 0.614 | |
+
+
+### Task2
+
+
+
+| Task | Dasheng-Base Score | Whisper-Base Score | 
+| :--- | :---: | :---: |
+| `eval_aishell-1` | 0.00 |  0.937 |
+| `eval_clotho` | 0.20 | 0.33 |
+| `eval_librispeech` | 0.00 | 0.32 | 
+
+
 ### Single dataset training
 
 
@@ -110,7 +145,7 @@ eval_custom:
 ```
 
 
-### Modify dataset
+### Modify downloaded dataset path
 
 By default all data is downloaded and stored in `./xares_data` from the current directory.
 During training the data is directly fetched and cached in this directory.
