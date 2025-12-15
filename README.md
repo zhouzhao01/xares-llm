@@ -66,24 +66,26 @@ class DummyEncoder(torch.nn.Module):
 
 ### Task1
 
+
+
 | Task | Dasheng-Base Score | Whisper-Base Score | 
 | :--- | :---: | :---: |
-| `eval_asvspoof2015` | 0.937 | |
-| `eval_cremad` | 0.621 | |
-| `eval_esc-50` | 0.755 | |
-| `eval_fluentspeechcommands` | 0.984 | |
-| `eval_freemusicarchive` | 0.429 | |
-| `eval_fsd50k` | 0.063 | |
-| `eval_fsdkaggle2018` | 0.415 | |
-| `eval_gtzan` | 0.323 | |
-| `eval_libricount` | 0.386 | |
-| `eval_nsynth` | 0.675 | |
-| `eval_speechcommandsv1` | 0.655 | |
-| `eval_urbansound8k` | 0.829 | |
-| `eval_vocalsound` | 0.855 | |
-| `eval_voxceleb1` | 0.974 | |
-| `eval_voxlingua33` | 0.311 | |
-| Overall | 0.614 | |
+| `eval_asvspoof2015` | 0.937 | 0.943 |
+| `eval_cremad` | 0.621 | 0.516 |
+| `eval_esc-50` | 0.755 | 0.635 |
+| `eval_fluentspeechcommands` | 0.984 | 0.817 |
+| `eval_freemusicarchive` | 0.429 | 0.579 |
+| `eval_fsd50k` | 0.063 | 0.092 |
+| `eval_fsdkaggle2018` | 0.415 | 0.552 |
+| `eval_gtzan` | 0.323 | 0.697 |
+| `eval_libricount` | 0.386 |0.409 |
+| `eval_nsynth` | 0.675 | 0.638 |
+| `eval_speechcommandsv1` | 0.655 | 0.694 |
+| `eval_urbansound8k` | 0.829 | 0.737 |
+| `eval_vocalsound` | 0.855 | 0.867 |
+| `eval_voxceleb1` | 0.974 |0.762 |
+| `eval_voxlingua33` | 0.311 | 0.835 |
+| Overall | 0.614 | 0.652 |
 
 
 ### Task2

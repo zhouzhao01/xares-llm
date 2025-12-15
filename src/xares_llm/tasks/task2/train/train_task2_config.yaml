@@ -1,4 +1,4 @@
-max_steps: 50000
+max_steps: 100000
 train_data:
     AISHELL-1:
         prompt: Transcribe the Chinese speech into text.
